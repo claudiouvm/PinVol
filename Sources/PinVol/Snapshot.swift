@@ -61,7 +61,12 @@ final class SnapshotDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             let v = s.window.contentView!.superview!
             v.layoutSubtreeIfNeeded()
-            let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds)!
+            // A 2x, como una pantalla retina: así las capturas del README se ven nítidas.
+            let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int((v.bounds.width * 2).rounded()),
+                                       pixelsHigh: Int((v.bounds.height * 2).rounded()), bitsPerSample: 8,
+                                       samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                       colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+            rep.size = v.bounds.size
             v.cacheDisplay(in: v.bounds, to: rep)
             try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
             NSApp.terminate(nil)
