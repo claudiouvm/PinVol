@@ -276,7 +276,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private func buildAbout() {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "?"
-        let build = info?["CFBundleVersion"] as? String ?? "?"
         let channel = (info?["PinVolReleaseChannel"] as? String).map { "\($0) " } ?? ""
 
         let logo = NSImageView(image: NSApp.applicationIconImage)
@@ -284,7 +283,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         logo.widthAnchor.constraint(equalToConstant: 112).isActive = true
         logo.heightAnchor.constraint(equalToConstant: 112).isActive = true
         let name = makeLabel("PinVol", size: 24, weight: .semibold)
-        let versionLabel = makeLabel("Versión \(channel)\(version) (\(build))", size: 12, color: .secondaryLabelColor)
+        let versionLabel = makeLabel("Versión \(channel)\(version)", size: 12, color: .secondaryLabelColor)
         let madeIn = makeLabel("Made in Chile by Claudiouvm and Claude <3", size: 12)
 
         updateButton.bezelStyle = .rounded
