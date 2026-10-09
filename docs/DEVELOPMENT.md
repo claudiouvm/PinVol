@@ -48,7 +48,7 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `./snapshot.sh` | Builds a development variant and renders PNG screenshots of the window (light/dark, 1 and 5 apps, every tab) into `build/snapshots/`, with no screen-recording permission needed |
 | `python3 tools/make-icon.py` | Regenerates `Resources/AppIcon.icns` and the menu bar glyphs (`MenuBar*Template*.png`). Everything is drawn in code; needs `pip3 install pillow` |
 
-The front-page screenshots (`docs/apps-claro.png`, `docs/apps-oscuro.png`) come from the manual `Screenshots` workflow, which installs Spotify, IINA and TIDAL on the runner so their real icons and names show up; copy `light-five.png` and `dark-five.png` from its `capturas-portada` artifact.
+The front-page screenshots (`docs/apps-claro.png`, `docs/apps-oscuro.png`) come from the manual `Screenshots` workflow, which installs Spotify, IINA and TIDAL on the runner so their real icons and names show up; copy `light-five.png` and `dark-five.png` from its `capturas-portada` artifact. The gains shown in the mockups (for example −2.3 dB or +11.9 dB) are the real ones: `snapshot.sh` computes them with the engine's formula, `dB(pinned level) − dB(system volume)`, on the speakers' quadratic curve and with the system volume at 50 % (`SYSTEM=0.4 ./snapshot.sh` to change it).
 
 `snapshot.sh` builds with `-DSNAPSHOT` and uses a different bundle identifier (`com.claudiouvm.pinvol.dev`), so it does not touch the real app's settings or permissions.
 
@@ -62,7 +62,7 @@ To label a version as beta, add `PinVolReleaseChannel` = `Beta` to `Info.plist` 
 
 ## Known limits
 
-- Apple Silicon only (arm64, macOS 14.2 or later; 14.2 is the first release with process taps). Intel Macs are not supported.
+- Apple Silicon only (arm64) and macOS 26 (Tahoe) or later. The process-tap API itself exists since macOS 14.2, but that is not what PinVol is built and tested on. Intel Macs and older macOS are not supported (use [1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2) on macOS 14.2–15, or [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1) on Intel).
 - At most 5 apps at once (`maxPinnedApps` in `Model.swift`): each one opens its own tap and aggregate device.
 - With a very low system volume and a high pinned level the gain reaches its maximum (+24 dB) and can't compensate any further; the status line says so.
 - On outputs without software volume control (some HDMI or USB devices) there is nothing to compensate and the app says so.

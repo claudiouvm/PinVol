@@ -1,17 +1,14 @@
-# PinVol 1.2
+# PinVol 1.3
 
 ## English
 
 Keeps the volume of the apps you choose fixed, no matter what the system volume is.
 
-**What's new since 1.1**
+**What's new since 1.2**
 
-- **Apple Silicon only.** PinVol is now a native arm64 app for Macs with Apple silicon (M1 or later) running macOS 14.2 or later, and the download is smaller. Intel Macs are no longer supported; [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1), the last universal build, keeps working there.
-- **Smoother window**: switching tabs or adding and removing apps always uses the same short animation (it respects *Reduce motion*).
-- About shows the version without the build number.
-- Released under the MIT license.
+- **Requires macOS 26 (Tahoe) or later**, on a Mac with Apple silicon (M1 or later). PinVol is now built with the macOS 26 toolchain. On macOS 14.2–15 keep using [1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2); on an Intel Mac, [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1).
 
-**Install**: open `PinVol.dmg` and drag PinVol to Applications. Needs a Mac with Apple silicon and macOS 14.2 or later. The app is ad-hoc signed and not notarized; if macOS says it is "damaged", run:
+**Install**: open `PinVol.dmg` and drag PinVol to Applications. The app is ad-hoc signed and not notarized; if macOS says it is "damaged", run:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/PinVol.app
@@ -21,14 +18,11 @@ xattr -dr com.apple.quarantine /Applications/PinVol.app
 
 Mantiene fijo el volumen de las apps que elijas, sin importar el volumen del sistema.
 
-**Novedades desde la 1.1**
+**Novedades desde la 1.2**
 
-- **Solo Apple Silicon.** PinVol ahora es una app arm64 nativa para Mac con Apple silicon (M1 o posterior) y macOS 14.2 o posterior, y la descarga es más liviana. Ya no se soportan los Mac Intel; la [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1), la última versión universal, sigue funcionando ahí.
-- **Ventana más fluida**: al cambiar de pestaña o al añadir y quitar apps siempre se usa la misma animación breve (respeta *Reducir movimiento*).
-- Acerca de muestra la versión sin el número de build.
-- Publicada bajo la licencia MIT.
+- **Requiere macOS 26 (Tahoe) o posterior**, en un Mac con Apple silicon (M1 o posterior). PinVol ahora se compila con las herramientas de macOS 26. En macOS 14.2–15 sigue usando la [1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2); en un Mac Intel, la [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1).
 
-**Instalación**: abre `PinVol.dmg` y arrastra PinVol a Aplicaciones. Necesita un Mac con Apple silicon y macOS 14.2 o posterior. La app está firmada ad-hoc y no notarizada; si macOS dice que está «dañada», ejecuta:
+**Instalación**: abre `PinVol.dmg` y arrastra PinVol a Aplicaciones. La app está firmada ad-hoc y no notarizada; si macOS dice que está «dañada», ejecuta:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/PinVol.app

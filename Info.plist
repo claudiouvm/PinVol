@@ -8,14 +8,14 @@
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleExecutable</key><string>PinVol</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.2</string>
-  <key>CFBundleVersion</key><string>5</string>
+  <key>CFBundleShortVersionString</key><string>1.3</string>
+  <key>CFBundleVersion</key><string>6</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>NSHumanReadableCopyright</key><string>Made in Chile by Claudiouvm and Claude</string>
-  <key>LSMinimumSystemVersion</key><string>14.2</string>
+  <key>LSMinimumSystemVersion</key><string>26.0</string>
   <key>LSUIElement</key><true/>
   <key>NSAudioCaptureUsageDescription</key>
   <string>PinVol captura el audio de la app que elijas para mantener su volumen constante.</string>

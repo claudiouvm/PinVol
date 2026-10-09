@@ -17,15 +17,25 @@ run() { name=$1; shift; "$BIN" --snapshot "$OUT/$name.png" "$@" >/dev/null 2>&1 
 # Apps de ejemplo para las capturas de 5 apps (todas con audio). Si no están instaladas salen con el nombre del bundle id.
 # Se pueden cambiar: APPS=com.apple.Music,com.apple.Safari,... ./snapshot.sh
 APPS=${APPS:-com.apple.Music,com.apple.Safari,com.spotify.client,com.colliderli.iina,com.tidal.desktop}
+LEVELS=0.45,0.8,0.3,0.6,0.15
+
+# Ganancia real que mostraría cada app con el volumen del sistema al SYSTEM (50 % por defecto).
+# Misma cuenta que el motor: dB(nivel fijo) − dB(volumen del sistema), con la curva de los altavoces del Mac,
+# que es cuadrática: dB = −63.5 × (1 − √volumen). Con 50 %: 0.45 → −2.3 dB, 0.8 → +11.9 dB, 0.3 → −10.1 dB…
+SYSTEM=${SYSTEM:-0.5}
+gains() { awk -v sys="$SYSTEM" -v levels="$1" 'function db(v) { return -63.5 * (1 - sqrt(v)) } BEGIN { n = split(levels, a, ","); for (i = 1; i <= n; i++) printf "%s%.1f", (i > 1 ? "," : ""), db(a[i]) - db(sys) }'; }
+FIVE=$(gains $LEVELS)
+ONE=$(gains 0.45)
+
 run light-empty
-run light-assigned   --assigned com.apple.Music --level 0.45 --on --status active --text "Activo · +6.2 dB"
-run light-five       --assigned $APPS --level 0.45,0.8,0.3,0.6,0.15 --on --status active --text "Activo · +6.2 dB"
+run light-assigned   --assigned com.apple.Music --level 0.45 --gains $ONE --on --status active
+run light-five       --assigned $APPS --level $LEVELS --gains $FIVE --on --status active
 run light-settings   --tab settings
 run light-about      --tab about
-run light-update     --assigned com.apple.Music --level 0.45 --on --update available --status active --text "Activo · +6.2 dB"
+run light-update     --assigned com.apple.Music --level 0.45 --gains $ONE --on --update available --status active
 run dark-empty       --dark
-run dark-assigned    --dark --assigned com.apple.Music --level 0.45 --on --status active --text "Activo · +6.2 dB"
-run dark-five        --dark --assigned $APPS --level 0.45,0.8,0.3,0.6,0.15 --on --status active --text "Activo · +6.2 dB"
+run dark-assigned    --dark --assigned com.apple.Music --level 0.45 --gains $ONE --on --status active
+run dark-five        --dark --assigned $APPS --level $LEVELS --gains $FIVE --on --status active
 run dark-about       --dark --tab about
 run light-waiting    --assigned com.apple.Music --level 0.8 --on --status waiting --text "Esperando audio de la app…"
 run light-error      --assigned com.apple.Music --level 0.8 --on --status error --text "Error de audio (-1). ¿Concediste el permiso de audio?"

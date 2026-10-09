@@ -11,7 +11,8 @@ func devLog(_ s: String) {
 
 // MARK: - Solo desarrollo: renderiza la ventana a un PNG
 // `--snapshot out.png [--dark] [--tab apps|settings|about] [--assigned id1,id2,…] [--level x1,x2,…] [--on]
-//                     [--status kind --text t] [--update available|uptodate|failed]`
+//                     [--status kind --text t] [--gains dB1,dB2,…] [--update available|uptodate|failed]`
+// Con `--status active`, `--gains` pone en cada app la ganancia que mostraría («Activo · +11.9 dB»).
 
 final class StaticBackend: Backend {
     var state: AppState
@@ -38,10 +39,14 @@ final class SnapshotDelegate: NSObject, NSApplicationDelegate {
         var st = AppState()
         let ids = opt("--assigned")?.split(separator: ",").map { String($0) } ?? []
         let levels = opt("--level")?.split(separator: ",").compactMap { Float($0) } ?? []
+        let gains = opt("--gains")?.split(separator: ",").compactMap { Double($0) } ?? []
         let status = opt("--status").map { EngineStatus(kind: EngineStatus.Kind(rawValue: $0) ?? .idle, text: opt("--text") ?? $0) }
         for (i, id) in ids.enumerated() {
             var app = PinnedApp(id: id, level: i < levels.count ? levels[i] : (levels.last ?? 0.5))
-            if let status { app.status = status }
+            if var s = status {
+                if s.kind == .active, i < gains.count { s = EngineStatus(kind: .active, text: String(format: "Activo · %+.1f dB", gains[i])) }
+                app.status = s
+            }
             st.apps.append(app)
         }
         st.enabled = args.contains("--on")

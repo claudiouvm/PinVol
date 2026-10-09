@@ -48,7 +48,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 | `./snapshot.sh` | Compila una variante de desarrollo y genera capturas PNG de la ventana (claro/oscuro, 1 y 5 apps, cada pestaña) en `build/snapshots/`, sin necesitar permiso de grabación de pantalla |
 | `python3 tools/make-icon.py` | Regenera `Resources/AppIcon.icns` y los glifos de la barra de menús (`MenuBar*Template*.png`). Todo está dibujado en código; requiere `pip3 install pillow` |
 
-Las capturas de la portada (`docs/apps-claro.png`, `docs/apps-oscuro.png`) salen del workflow manual `Screenshots`, que instala Spotify, IINA y TIDAL en el runner para que aparezcan sus íconos y nombres reales; copia `light-five.png` y `dark-five.png` de su artefacto `capturas-portada`.
+Las capturas de la portada (`docs/apps-claro.png`, `docs/apps-oscuro.png`) salen del workflow manual `Screenshots`, que instala Spotify, IINA y TIDAL en el runner para que aparezcan sus íconos y nombres reales; copia `light-five.png` y `dark-five.png` de su artefacto `capturas-portada`. Las ganancias de los mockups (por ejemplo −2,3 dB o +11,9 dB) son las reales: `snapshot.sh` las calcula con la fórmula del motor, `dB(nivel fijo) − dB(volumen del sistema)`, sobre la curva cuadrática de los altavoces y con el volumen del sistema al 50 % (`SYSTEM=0.4 ./snapshot.sh` para cambiarlo).
 
 `snapshot.sh` compila con `-DSNAPSHOT` y usa otro identificador (`com.claudiouvm.pinvol.dev`), así que no toca los ajustes ni los permisos de la app real.
 
@@ -62,7 +62,7 @@ Para etiquetar una versión como beta, añade `PinVolReleaseChannel` = `Beta` en
 
 ## Límites conocidos
 
-- Solo Apple Silicon (arm64, macOS 14.2 o posterior; la 14.2 es la primera con process taps). Los Mac Intel no están soportados.
+- Solo Apple Silicon (arm64) y macOS 26 (Tahoe) o posterior. La API de process taps existe desde macOS 14.2, pero esa no es la versión en que PinVol se compila y prueba. Los Mac Intel y las versiones anteriores de macOS no están soportados (usa la [1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2) en macOS 14.2–15, o la [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1) en Intel).
 - El máximo es de 5 apps a la vez (`maxPinnedApps` en `Model.swift`): cada una abre su propio tap y su propio dispositivo agregado.
 - Con el volumen del sistema muy bajo y un nivel fijo alto, la ganancia llega al máximo (+24 dB) y ya no se puede compensar más; la línea de estado lo indica.
 - En salidas sin control de volumen por software (algunas HDMI o USB) no hay nada que compensar y la app lo avisa.

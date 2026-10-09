@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "PinVol",
-    platforms: [.macOS("14.2")],
+    platforms: [.macOS("26.0")],
     targets: [
         .executableTarget(
             name: "PinVol",
