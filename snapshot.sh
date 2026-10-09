@@ -14,10 +14,17 @@ cp Info.plist "$APP/Contents/Info.plist"
 codesign --force --sign - "$APP" >/dev/null 2>&1
 BIN="$APP/Contents/MacOS/PinVol"
 run() { name=$1; shift; "$BIN" --snapshot "$OUT/$name.png" "$@" >/dev/null 2>&1 || echo "falló $name"; }
+APPS=com.apple.Music,com.apple.Safari,com.apple.Notes,com.apple.Maps,com.apple.TextEdit
 run light-empty
 run light-assigned   --assigned com.apple.Music --level 0.45 --on --status active --text "Activo · +6.2 dB"
+run light-five       --assigned $APPS --level 0.45,0.8,0.3,0.6,0.15 --on --status active --text "Activo · +6.2 dB"
+run light-settings   --tab settings
+run light-about      --tab about
+run light-update     --assigned com.apple.Music --level 0.45 --on --update available --status active --text "Activo · +6.2 dB"
 run dark-empty       --dark
 run dark-assigned    --dark --assigned com.apple.Music --level 0.45 --on --status active --text "Activo · +6.2 dB"
+run dark-five        --dark --assigned $APPS --level 0.45,0.8,0.3,0.6,0.15 --on --status active --text "Activo · +6.2 dB"
+run dark-about       --dark --tab about
 run light-waiting    --assigned com.apple.Music --level 0.8 --on --status waiting --text "Esperando audio de la app…"
 run light-error      --assigned com.apple.Music --level 0.8 --on --status error --text "Error de audio (-1). ¿Concediste el permiso de audio?"
 ls "$OUT"

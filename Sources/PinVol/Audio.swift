@@ -146,12 +146,16 @@ struct EngineStatus {
     var detail: String? = nil   // texto largo para el tooltip
 }
 
+/// Controla una app: un tap sobre sus procesos, un dispositivo agregado privado y la ganancia que compensa el volumen del sistema.
+/// PinVol crea un `Engine` por cada app fijada.
 final class Engine {
     static let maxGain: Float = 16   // +24 dB
 
     var bundleID: String? { didSet { reconcile() } }
     var enabled = false { didSet { reconcile() } }
     var level: Float = 0.5 { didSet { updateGain() } }
+    /// Identificadores de las otras apps fijadas: sus procesos no se capturan aquí (ver `matchingProcesses`).
+    var otherBundleIDs: [String] = [] { didSet { if oldValue != otherBundleIDs { reconcile() } } }
     var onStatus: ((EngineStatus) -> Void)?
 
     private let gain = UnsafeMutablePointer<Float>.allocate(capacity: 1)
@@ -165,7 +169,9 @@ final class Engine {
     private var volumeListeners: [Listener] = []
     private var systemListeners: [Listener] = []
 
-    init() {
+    init(bundleID: String? = nil, level: Float = 0.5) {
+        self.bundleID = bundleID
+        self.level = level
         gain.pointee = 1
         systemListeners = [
             Listener(system, caAddr(kAudioHardwarePropertyProcessObjectList)) { [weak self] in self?.reconcile() },
@@ -173,11 +179,16 @@ final class Engine {
         ]
     }
 
+    /// ¿Pertenece el proceso `id` a la app `owner`? Coincide por prefijo: así entran los procesos auxiliares
+    /// de navegadores y apps Electron (com.app.helper).
+    private func claims(_ id: String, _ owner: String) -> Bool { id == owner || id.hasPrefix(owner + ".") }
+
     private func matchingProcesses() -> [AudioObjectID] {
         guard let b = bundleID else { return [] }
-        return caArray(system, kAudioHardwarePropertyProcessObjectList, as: AudioObjectID.self).filter {
-            guard let id = caString($0, kAudioProcessPropertyBundleID) else { return false }
-            return id == b || id.hasPrefix(b + ".")
+        return caArray(system, kAudioHardwarePropertyProcessObjectList, as: AudioObjectID.self).filter { proc in
+            guard let id = caString(proc, kAudioProcessPropertyBundleID), claims(id, b) else { return false }
+            // Si otra app fijada es más específica (com.google.Chrome.canary frente a com.google.Chrome), se queda con el proceso.
+            return !otherBundleIDs.contains { $0.count > b.count && claims(id, $0) }
         }
     }
 
@@ -331,5 +342,8 @@ final class Engine {
         tapID = AudioObjectID(kAudioObjectUnknown)
     }
 
-    deinit { teardown() }
+    deinit {
+        teardown()
+        gain.deallocate()
+    }
 }
