@@ -841,7 +841,13 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = item
     }
 
+    /// Glifo propio derivado del ícono (lo genera tools/make-icon.py y build.sh lo copia a Resources);
+    /// activo a opacidad completa, inactivo atenuado. Sin el recurso (p. ej. con `swift run`), cae al símbolo del sistema.
     private func menuBarImage(active: Bool) -> NSImage? {
+        if let glyph = NSImage(named: NSImage.Name(active ? "MenuBarActiveTemplate" : "MenuBarIdleTemplate")) {
+            glyph.isTemplate = true
+            return glyph
+        }
         let img = symbol(active ? "speaker.wave.2.fill" : "speaker.wave.2", size: 14, weight: .medium)
         img?.isTemplate = true
         return img
