@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="PinVol icon">
+  <img src="docs/icon.png" width="300" alt="PinVol icon">
 </p>
 
 <h1 align="center">PinVol</h1>
 
 <p align="center">
-  <b>Pin the volume of your Mac apps.</b><br>
-  Keep up to 5 apps at a fixed level, no matter what the system volume is.
+  <b>Fixed volume for your Mac apps.</b><br>
+  Pin up to 5 apps at their own level, whatever the system volume.
 </p>
 
 <p align="center">
@@ -14,10 +14,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/claudiouvm/PinVol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/claudiouvm/PinVol?style=flat-square&color=gold"></a>
   <a href="https://github.com/claudiouvm/PinVol/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/claudiouvm/PinVol?style=flat-square&color=blue"></a>
   <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%2014.2%2B-lightgrey?style=flat-square">
-  <img alt="Architecture" src="https://img.shields.io/badge/Apple%20Silicon%20%2B%20Intel-universal-orange?style=flat-square">
-  <img alt="Made in Chile" src="https://img.shields.io/badge/made%20in-Chile-red?style=flat-square">
+  <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-brightgreen?style=flat-square">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
+  <a href="https://github.com/claudiouvm/PinVol/pulls"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-ff69b4?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -67,6 +69,10 @@ xattr -dr com.apple.quarantine /Applications/PinVol.app
 ## How it works
 
 macOS has no per-app volume. PinVol taps the audio of each pinned app, mutes the original and plays it back through your output device with a gain of *pinned level ÷ system volume*, recomputed whenever the system volume changes. More in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+## License
+
+[MIT](LICENSE) © Claudiouvm
 
 * * *
 
