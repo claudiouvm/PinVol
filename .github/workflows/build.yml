@@ -59,7 +59,7 @@ jobs:
 
           func sample(_ label: String, _ x: Int, _ y: Int) -> (r: Double, g: Double, b: Double, a: Double) {
               let c = rep.colorAt(x: x, y: y)!.usingColorSpace(.deviceRGB)!
-              let v = (r: c.redComponent * 255, g: c.greenComponent * 255, b: c.blueComponent * 255, a: c.alphaComponent)
+              let v = (r: Double(c.redComponent) * 255, g: Double(c.greenComponent) * 255, b: Double(c.blueComponent) * 255, a: Double(c.alphaComponent))
               print(String(format: "ícono 512 %@ (%d,%d): rgb(%.0f,%.0f,%.0f) a=%.2f", label, x, y, v.r, v.g, v.b, v.a))
               return v
           }
