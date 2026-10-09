@@ -1,0 +1,23 @@
+name: Release notes
+
+# Manual. Copia RELEASE_NOTES.md a la release de la versión actual de Info.plist
+# (por ejemplo, tras corregir las notas sin cambiar de versión).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Actualizar las notas de la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(python3 -c "import plistlib; print(plistlib.load(open('Info.plist', 'rb'))['CFBundleShortVersionString'])")
+          gh release edit "v$VER" --notes-file RELEASE_NOTES.md

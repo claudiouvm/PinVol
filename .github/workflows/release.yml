@@ -2,7 +2,8 @@ name: Release
 
 # En cada PR compila y deja el .dmg como artefacto.
 # En main, además, actualiza dist/PinVol.dmg en el repo y publica una release (v<versión de Info.plist>)
-# si esa versión aún no existe. La comprobación de actualizaciones de la app consulta esa release.
+# si esa versión aún no existe, con las notas de RELEASE_NOTES.md (inglés y después español).
+# La comprobación de actualizaciones de la app consulta esa release.
 
 on:
   push:
@@ -40,6 +41,8 @@ jobs:
       - name: Comprobar el paquete
         run: |
           plutil -lint Info.plist
+          VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
+          head -1 RELEASE_NOTES.md | grep -qF "$VER" || { echo "RELEASE_NOTES.md debe empezar con el título de la versión $VER"; exit 1; }
           iconutil --convert iconset Resources/AppIcon.icns --output "$RUNNER_TEMP/AppIcon.iconset"
           for f in AppIcon.icns MenuBarActiveTemplate.png MenuBarActiveTemplate@2x.png MenuBarIdleTemplate.png MenuBarIdleTemplate@2x.png; do
             test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
@@ -84,5 +87,5 @@ jobs:
           if gh release view "v$VER" >/dev/null 2>&1; then
             echo "La release v$VER ya existe"
           else
-            gh release create "v$VER" dist/PinVol.dmg --title "PinVol $CHANNEL $VER" --generate-notes --target "$GITHUB_SHA"
+            gh release create "v$VER" dist/PinVol.dmg --title "PinVol ${CHANNEL:+$CHANNEL }$VER" --notes-file RELEASE_NOTES.md --target "$GITHUB_SHA"
           fi
