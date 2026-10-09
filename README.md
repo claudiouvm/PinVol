@@ -29,7 +29,7 @@ Requiere macOS 14.2 o posterior (desarrollada y probada en macOS 27) y las herra
 ./build.sh install
 ```
 
-Compila, firma ad-hoc y copia la app a `/Applications`. Sin `install`, `./build.sh` solo genera `build/PinVol.app`.
+Compila, firma ad-hoc y copia la app a `/Applications`, y refresca el registro de Launch Services para que el Dock y Ajustes del Sistema muestren el ícono actual. Sin `install`, `./build.sh` solo genera `build/PinVol.app`.
 
 La primera vez que PinVol captura el audio de una app, macOS pide el permiso **Grabación de audio del sistema**.
 
@@ -63,7 +63,7 @@ Todos los controles son nativos de AppKit (`NSSwitch`, `NSSlider`, símbolos SF)
 | `./build.sh` | Compila y genera `build/PinVol.app` |
 | `./build.sh install` | Además la instala en `/Applications` y la abre |
 | `./snapshot.sh` | Compila una variante de desarrollo y genera capturas PNG de la ventana (claro/oscuro) en `build/snapshots/`, sin necesitar permiso de grabación de pantalla |
-| `tools/make-icon.sh` | Regenera `Resources/AppIcon.icns` |
+| `python3 tools/make-icon.py` | Regenera `Resources/AppIcon.icns` y los glifos de la barra de menús (`MenuBar*Template*.png`). Todo está dibujado en código; requiere `pip3 install pillow` |
 
 `snapshot.sh` compila con `-DSNAPSHOT` y usa otro identificador (`com.claudiouvm.pinvol.dev`), así que no toca los ajustes ni los permisos de la app real.
 
