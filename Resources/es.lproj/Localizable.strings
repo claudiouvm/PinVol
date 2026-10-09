@@ -20,7 +20,7 @@
 "Remove %@" = "Quitar %@";
 "Remove app" = "Quitar app";
 "Keep levels fixed" = "Mantener nivel fijo";
-"Compensates for your Mac's system volume" = "Compensa el volumen general del Mac";
+"Offsets your Mac's system volume" = "Compensa el volumen general del Mac";
 "Maximum %ld apps: remove one to add another" = "Máximo %ld apps: quita una para añadir otra";
 "Couldn't read that app" = "No se pudo leer esa app";
 "That app is already in the list" = "Esa app ya está en la lista";

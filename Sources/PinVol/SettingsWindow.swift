@@ -212,7 +212,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         panel.onRemove = { [weak self] id in self?.removeApp(id) }
         panel.onLevel = { [weak self] id, v in self?.backend.setLevel(id, v) }
         let enableCard = Card(rows: [
-            formRow(L("Keep levels fixed"), detail: L("Compensates for your Mac's system volume"), control: enableSwitch),
+            formRow(L("Keep levels fixed"), detail: L("Offsets your Mac's system volume"), control: enableSwitch),
         ])
         fill(appsPage, with: [panel, enableCard])
 

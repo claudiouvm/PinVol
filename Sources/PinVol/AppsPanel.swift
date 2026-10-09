@@ -106,8 +106,9 @@ final class AppRow: NSView {
         icon.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
         nameLabel.stringValue = info.name
-        nameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        caption.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        // Si el estado es largo (p. ej. un error), se acorta él y no el nombre de la app; el texto completo va en el tooltip.
+        nameLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        caption.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         dot.contentTintColor = .tertiaryLabelColor
         let top = NSStackView(views: [nameLabel, spacer(), dot, caption])
         top.alignment = .centerY
