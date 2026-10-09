@@ -144,6 +144,15 @@ struct EngineStatus {
     let kind: Kind
     let text: String
     var detail: String? = nil   // texto largo para el tooltip
+
+    // Estados que usan el motor, el resumen de la ventana y las capturas de desarrollo.
+    static var dragToStart: EngineStatus { EngineStatus(kind: .idle, text: L("Drag an app in to start")) }
+    static var waiting: EngineStatus { EngineStatus(kind: .waiting, text: L("Waiting for the app's audio…")) }
+    static func active(gain db: Float) -> EngineStatus { EngineStatus(kind: .active, text: L("Active · %@", gainText(db))) }
+    static func captureFailed(_ code: OSStatus) -> EngineStatus {
+        EngineStatus(kind: .error, text: L("Couldn't capture the audio (%d)", code),
+                     detail: L("Check that PinVol has permission in System Settings → Privacy & Security → System Audio Recording."))
+    }
 }
 
 /// Controla una app: un tap sobre sus procesos, un dispositivo agregado privado y la ganancia que compensa el volumen del sistema.
@@ -214,32 +223,31 @@ final class Engine {
         if let err = setup(objects: objects, device: device) {
             teardown()
             activeObjects = []   // reintenta en el próximo evento
-            report(.error, "No se pudo capturar el audio (\(err))",
-                   detail: "Revisa que PinVol tenga permiso en Ajustes del Sistema → Privacidad y seguridad → Grabación de audio del sistema.")
+            report(.captureFailed(err))
         } else {
             updateGain()
         }
     }
 
     private func idleStatus(device: AudioObjectID?) -> EngineStatus {
-        if bundleID == nil { return EngineStatus(kind: .idle, text: "Arrastra una app para empezar") }
-        if !enabled { return EngineStatus(kind: .idle, text: "Nivel fijo desactivado") }
-        if device == nil { return EngineStatus(kind: .error, text: "Sin dispositivo de salida") }
-        return EngineStatus(kind: .waiting, text: "Esperando audio de la app…")
+        if bundleID == nil { return .dragToStart }
+        if !enabled { return EngineStatus(kind: .idle, text: L("Fixed levels are off")) }
+        if device == nil { return EngineStatus(kind: .error, text: L("No output device")) }
+        return .waiting
     }
 
     func updateGain() {
         guard tapID != kAudioObjectUnknown else { return }
         guard let m = master else {
             gain.pointee = 1
-            return report(.warning, "Salida sin control de volumen")
+            return report(.warning, L("Output has no volume control"))
         }
-        if m.isMuted { gain.pointee = 1; return report(.active, "Activo · sistema en silencio") }
+        if m.isMuted { gain.pointee = 1; return report(.active, L("Active · system muted")) }
         if levelDB?.level != level { levelDB = (level, m.decibels(forScalar: level)) }
         let g = powf(10, (levelDB!.db - m.decibels) / 20)
         gain.pointee = min(g, Engine.maxGain)
-        let db = String(format: "%+.1f dB", 20 * log10f(max(gain.pointee, 1e-6)))
-        report(g > Engine.maxGain ? .warning : .active, g > Engine.maxGain ? "Al límite de ganancia · \(db)" : "Activo · \(db)")
+        let db = gainText(20 * log10f(max(gain.pointee, 1e-6)))
+        report(g > Engine.maxGain ? .warning : .active, g > Engine.maxGain ? L("At the gain limit · %@", db) : L("Active · %@", db))
     }
 
     private func report(_ s: EngineStatus) { onStatus?(s) }

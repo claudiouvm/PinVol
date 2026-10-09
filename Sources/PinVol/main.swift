@@ -17,9 +17,9 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ n: Notification) {
-        let show = NSMenuItem(title: "Mostrar PinVol", action: #selector(showWindow), keyEquivalent: "")
+        let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "")
         show.target = self
-        installMainMenu(quitAction: #selector(NSApplication.terminate(_:)), quitTitle: "Salir de PinVol", extra: [show])
+        installMainMenu(quitAction: #selector(NSApplication.terminate(_:)), quitTitle: L("Quit PinVol"), extra: [show])
         model.onStatus = { [weak self] in self?.statusChanged() }
         model.onPresence = { [weak self] in self?.applyPresence() }
         model.onShow = { [weak self] in self?.showWindow() }
@@ -102,21 +102,21 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         head.image = dot(st.kind)
         menu.addItem(head)
         menu.addItem(.separator())
-        let show = NSMenuItem(title: "Mostrar PinVol", action: #selector(showWindow), keyEquivalent: "")
+        let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "")
         show.target = self
         menu.addItem(show)
-        let toggle = NSMenuItem(title: "Mantener nivel fijo", action: #selector(toggleEnabled), keyEquivalent: "")
+        let toggle = NSMenuItem(title: L("Keep levels fixed"), action: #selector(toggleEnabled), keyEquivalent: "")
         toggle.target = self
         toggle.state = model.enabled ? .on : .off
         menu.addItem(toggle)
         if model.update.kind == .available, let v = model.update.latest {
-            let update = NSMenuItem(title: "Descargar PinVol \(v)…", action: #selector(openUpdate), keyEquivalent: "")
+            let update = NSMenuItem(title: L("Download PinVol %@…", v), action: #selector(openUpdate), keyEquivalent: "")
             update.target = self
             menu.addItem(update)
         }
         if includeQuit {
             menu.addItem(.separator())
-            menu.addItem(withTitle: "Salir de PinVol", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            menu.addItem(withTitle: L("Quit PinVol"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         }
     }
 

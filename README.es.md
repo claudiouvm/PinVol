@@ -51,6 +51,7 @@
 | **Arrastrar y soltar** | Suelta uno o varios `.app`; la ventana crece y se encoge con ellos. |
 | **Barra de menús y Dock** | Ábrela desde cualquiera de los dos, y haz que se abra al iniciar sesión. |
 | **Claro y oscuro** | Controles nativos que siguen tu apariencia. |
+| **Español e inglés** | La interfaz sigue el idioma de tu Mac: en español si tu Mac está en español, y en inglés en cualquier otro caso. |
 | **Búsqueda de actualizaciones** | Te avisa cuando sale una versión nueva. Nunca instala nada por su cuenta. |
 
 ## Instalación

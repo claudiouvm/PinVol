@@ -1,0 +1,3 @@
+/* Textos de Info.plist en inglés, el idioma base. */
+"NSAudioCaptureUsageDescription" = "PinVol captures the audio of the app you choose to keep its volume constant.";
+"NSHumanReadableCopyright" = "Made in Chile by Claudiouvm and Claude";

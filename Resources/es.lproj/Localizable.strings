@@ -1,0 +1,77 @@
+/*
+  Traducción al español. La clave es el texto en inglés tal como aparece en el código (L("…"), ver Strings.swift).
+  Cada texto nuevo necesita su línea aquí: tools/check-strings.py lo comprueba en el CI.
+*/
+
+/* Ventana: pestañas y cabecera */
+"Apps" = "Apps";
+"Settings" = "Ajustes";
+"About" = "Acerca de";
+"Keep your apps' volume fixed" = "Mantén fijo el volumen de tus apps";
+
+/* Pestaña Apps */
+"Drop an app here" = "Arrastra una app aquí";
+"Its volume will stay fixed · up to %ld apps" = "Su volumen quedará fijo · hasta %ld apps";
+"Drop another app here · %ld of %ld" = "Arrastra otra app aquí · %ld de %ld";
+"Drop the .app whose volume you want to keep fixed (up to %ld apps)" = "Suelta aquí el archivo .app cuyo volumen quieres mantener fijo (hasta %ld apps)";
+"Fixed level for %@" = "Nivel fijo de %@";
+"The volume %@ will play at, on the same scale as the system volume" = "Volumen al que sonará %@, en la misma escala que el volumen del sistema";
+"Stop controlling %@" = "Dejar de controlar %@";
+"Remove %@" = "Quitar %@";
+"Remove app" = "Quitar app";
+"Keep levels fixed" = "Mantener nivel fijo";
+"Compensates for your Mac's system volume" = "Compensa el volumen general del Mac";
+"Maximum %ld apps: remove one to add another" = "Máximo %ld apps: quita una para añadir otra";
+"Couldn't read that app" = "No se pudo leer esa app";
+"That app is already in the list" = "Esa app ya está en la lista";
+
+/* Pestaña Ajustes */
+"Show in the Dock" = "Mostrar en el Dock";
+"Show in the menu bar" = "Mostrar en la barra de menús";
+"Open at login" = "Abrir al iniciar sesión";
+"Check for updates" = "Buscar actualizaciones";
+"Checks GitHub once a day" = "Consulta GitHub una vez al día";
+"Couldn't change the login setting" = "No se pudo cambiar el inicio de sesión";
+
+/* Pestaña Acerca de y actualizaciones */
+"Made in Chile by Claudiouvm and Claude <3" = "Hecho en Chile por Claudiouvm y Claude <3";
+"Version %@" = "Versión %@";
+"Updates" = "Actualizaciones";
+"Check" = "Buscar";
+"Checking…" = "Buscando…";
+"Up to date · %@" = "Estás al día · %@";
+"New version %@" = "Nueva versión %@";
+"Version %@ available · Download" = "Nueva versión %@ disponible · Descargar";
+"Download" = "Descargar";
+"Retry" = "Reintentar";
+"Couldn't check" = "No se pudo comprobar";
+"Source code on GitHub" = "Código fuente en GitHub";
+"No releases published (or the repository is private)" = "No hay versiones publicadas (o el repositorio es privado)";
+"GitHub rate-limited the requests; try again later" = "GitHub limitó las consultas; reintenta más tarde";
+"No connection: %@" = "Sin conexión: %@";
+"Unexpected response from GitHub" = "Respuesta inesperada de GitHub";
+
+/* Pie de la ventana */
+"Quit" = "Salir";
+"Quits PinVol completely: the app stops controlling the volume" = "Cierra PinVol por completo: la app deja de controlar el volumen";
+
+/* Estado del motor */
+"Drag an app in to start" = "Arrastra una app para empezar";
+"Fixed levels are off" = "Nivel fijo desactivado";
+"No output device" = "Sin dispositivo de salida";
+"Waiting for the app's audio…" = "Esperando audio de la app…";
+"Output has no volume control" = "Salida sin control de volumen";
+"Active · %@" = "Activo · %@";
+"Active · system muted" = "Activo · sistema en silencio";
+"Active · %ld of %ld apps" = "Activo · %ld de %ld apps";
+"Active · %ld of %ld apps · at the limit" = "Activo · %ld de %ld apps · al límite";
+"At the gain limit · %@" = "Al límite de ganancia · %@";
+"Couldn't capture the audio (%d)" = "No se pudo capturar el audio (%d)";
+"Check that PinVol has permission in System Settings → Privacy & Security → System Audio Recording." = "Revisa que PinVol tenga permiso en Ajustes del Sistema → Privacidad y seguridad → Grabación de audio del sistema.";
+
+/* Menús (barra de menús, Dock y menú principal) */
+"Show PinVol" = "Mostrar PinVol";
+"Quit PinVol" = "Salir de PinVol";
+"Download PinVol %@…" = "Descargar PinVol %@…";
+"Window" = "Ventana";
+"Close" = "Cerrar";

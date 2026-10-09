@@ -51,6 +51,7 @@
 | **Drag and drop** | Drop one or several `.app` files; the window grows and shrinks with them. |
 | **Menu bar and Dock** | Open it from either one, and launch it at login. |
 | **Light and dark** | Native controls that follow your appearance. |
+| **English and Spanish** | The interface follows your Mac's language: Spanish if your Mac is set to Spanish, English otherwise. |
 | **Update check** | Tells you when a new version is out. It never installs anything by itself. |
 
 ## Install
