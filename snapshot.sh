@@ -27,6 +27,18 @@ gains() { awk -v sys="$SYSTEM" -v levels="$1" 'function db(v) { return -63.5 * (
 FIVE=$(gains $LEVELS)
 ONE=$(gains 0.45)
 
+# En macOS 26 el servicio de íconos tarda unos segundos en generar los de apps recién instaladas: sin esto, las primeras
+# capturas salen con cuadros punteados. Se repite una captura de calentamiento (se descarta) hasta que dos seguidas
+# son idénticas, con un máximo de 10 intentos.
+prev=""
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  "$BIN" --snapshot "$OUT/warmup.png" --assigned $APPS --level $LEVELS >/dev/null 2>&1 || true
+  if [[ -n "$prev" ]] && cmp -s "$OUT/warmup.png" "$prev"; then break; fi
+  cp "$OUT/warmup.png" "$OUT/warmup-prev.png"; prev="$OUT/warmup-prev.png"
+  sleep 2
+done
+rm -f "$OUT/warmup.png" "$OUT/warmup-prev.png"
+
 run light-empty
 run light-assigned   --assigned com.apple.Music --level 0.45 --gains $ONE --on --status active
 run light-five       --assigned $APPS --level $LEVELS --gains $FIVE --on --status active
