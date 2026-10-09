@@ -10,7 +10,7 @@ rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build-snap/release/PinVol "$APP/Contents/MacOS/PinVol"
 cp Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.claudiouvm.pinvol.dev" "$APP/Contents/Info.plist"   # ajustes y permisos aparte de la app real
-[ -f Resources/AppIcon.icns ] && cp Resources/AppIcon.icns "$APP/Contents/Resources/"
+cp Resources/* "$APP/Contents/Resources/"
 codesign --force --sign - "$APP" >/dev/null 2>&1
 BIN="$APP/Contents/MacOS/PinVol"
 run() { name=$1; shift; "$BIN" --snapshot "$OUT/$name.png" "$@" >/dev/null 2>&1 || echo "falló $name"; }

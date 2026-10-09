@@ -40,6 +40,10 @@ jobs:
       - name: Comprobar el paquete
         run: |
           plutil -lint Info.plist
+          iconutil --convert iconset Resources/AppIcon.icns --output "$RUNNER_TEMP/AppIcon.iconset"
+          for f in AppIcon.icns MenuBarActiveTemplate.png MenuBarActiveTemplate@2x.png MenuBarIdleTemplate.png MenuBarIdleTemplate@2x.png; do
+            test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
+          done
           codesign --verify --verbose build/PinVol.app
           hdiutil verify dist/PinVol.dmg
 
