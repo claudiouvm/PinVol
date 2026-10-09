@@ -1,6 +1,11 @@
 #!/bin/zsh
 set -euo pipefail
 cd "$(dirname "$0")"
+# PinVol es solo para Apple Silicon: no se genera binario x86_64.
+if [[ "$(uname -m)" != "arm64" ]]; then
+  echo "PinVol solo se compila para Apple Silicon (arm64). Usa un Mac con Apple Silicon y una terminal nativa, sin Rosetta." >&2
+  exit 1
+fi
 swift build -c release
 APP=build/PinVol.app
 rm -rf "$APP"

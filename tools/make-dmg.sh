@@ -1,41 +1,42 @@
 #!/bin/zsh
-# Genera dist/PinVol.dmg: compila la app (binario universal arm64 + x86_64) y la empaqueta
+# Genera dist/PinVol.dmg: compila la app (solo Apple Silicon, arm64) y la empaqueta
 # con un acceso directo a /Applications para instalarla arrastrando.
 #   tools/make-dmg.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-./build.sh    # compila para la arquitectura de esta máquina → build/PinVol.app
+./build.sh    # compila y firma build/PinVol.app (falla si no es un Mac con Apple Silicon)
 APP=build/PinVol.app
 BIN="$APP/Contents/MacOS/PinVol"
-
-# Añade la otra arquitectura para que la app corra en Mac con Apple Silicon e Intel.
-for ARCH in arm64 x86_64; do
-  [[ "$(lipo -archs "$BIN")" == *"$ARCH"* ]] && continue
-  TRIPLE="$ARCH-apple-macosx14.2"
-  swift build -c release --triple "$TRIPLE" --scratch-path ".build-$ARCH"
-  OTHER="$(swift build -c release --triple "$TRIPLE" --scratch-path ".build-$ARCH" --show-bin-path)/PinVol"
-  lipo -create "$BIN" "$OTHER" -output "$BIN.universal"
-  mv "$BIN.universal" "$BIN"
-done
-strip -x "$BIN"
-codesign --force --sign - "$APP"
-echo "Arquitecturas: $(lipo -archs "$BIN")"
+ARCHS="$(lipo -archs "$BIN")"
+[[ "$ARCHS" == "arm64" ]] || { echo "El binario debe ser solo arm64 y es: $ARCHS" >&2; exit 1; }
+echo "Arquitectura: $ARCHS"
 
 VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
 CHANNEL=$(/usr/libexec/PlistBuddy -c "Print :PinVolReleaseChannel" Info.plist 2>/dev/null || true)
 STAGE=$(mktemp -d)
 ditto "$APP" "$STAGE/PinVol.app"
 ln -s /Applications "$STAGE/Applications"
-cat > "$STAGE/LEEME.txt" <<TXT
-PinVol $CHANNEL $VER
+cat > "$STAGE/README.txt" <<TXT
+PinVol ${CHANNEL:+$CHANNEL }$VER
 
+ENGLISH
+Requires a Mac with Apple Silicon (M1 or later) and macOS 14.2 or later.
+1. Drag PinVol to the Applications folder.
+2. Open it. The first time it captures an app's audio, macOS asks for the
+   "System Audio Recording" permission.
+If macOS says the app is "damaged" or can't be opened (it is ad-hoc signed, not
+notarized by Apple), open Terminal and run:
+
+   xattr -dr com.apple.quarantine /Applications/PinVol.app
+
+ESPAÑOL
+Requiere un Mac con Apple Silicon (M1 o posterior) y macOS 14.2 o posterior.
 1. Arrastra PinVol a la carpeta Aplicaciones.
 2. Ábrela. La primera vez que capture el audio de una app, macOS pide el permiso
    «Grabación de audio del sistema».
-
-Si macOS dice que la app «está dañada» o que no se puede abrir (la app no está
-notarizada por Apple, solo firmada ad-hoc), abre Terminal y ejecuta:
+Si macOS dice que la app «está dañada» o que no se puede abrir (está firmada
+ad-hoc, no notarizada por Apple), abre Terminal y ejecuta:
 
    xattr -dr com.apple.quarantine /Applications/PinVol.app
 TXT

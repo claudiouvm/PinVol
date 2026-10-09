@@ -1,19 +1,17 @@
-# PinVol 1.1
+# PinVol 1.2
 
 ## English
 
 Keeps the volume of the apps you choose fixed, no matter what the system volume is.
 
-**What's new since 1.0**
+**What's new since 1.1**
 
-- **Up to 5 apps at once**, each with its own fixed level (1.0 handled a single app). Your 1.0 settings migrate automatically.
-- **Adaptive drop zone**: a large card when empty, a compact strip with 1–4 apps, hidden at 5. The window grows and shrinks with a consistent animation (it respects *Reduce motion*).
-- **Tabs**: Apps, Settings and About (large logo, version and credits).
-- **Update check**: once a day (optional) it looks at the latest GitHub release and shows a banner in the window and an item in the menu. It never downloads or installs anything by itself.
-- **New app icon** and menu bar glyph.
-- Apps that share a bundle-id prefix (for example `com.google.Chrome` and `com.google.Chrome.canary`) no longer steal each other's audio processes.
+- **Apple Silicon only.** PinVol is now a native arm64 app for Macs with Apple silicon (M1 or later) running macOS 14.2 or later, and the download is smaller. Intel Macs are no longer supported; [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1), the last universal build, keeps working there.
+- **Smoother window**: switching tabs or adding and removing apps always uses the same short animation (it respects *Reduce motion*).
+- About shows the version without the build number.
+- Released under the MIT license.
 
-**Install**: open `PinVol.dmg` and drag PinVol to Applications. Universal binary (Apple Silicon and Intel), macOS 14.2 or later. The app is ad-hoc signed and not notarized; if macOS says it is "damaged", run:
+**Install**: open `PinVol.dmg` and drag PinVol to Applications. Needs a Mac with Apple silicon and macOS 14.2 or later. The app is ad-hoc signed and not notarized; if macOS says it is "damaged", run:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/PinVol.app
@@ -23,16 +21,14 @@ xattr -dr com.apple.quarantine /Applications/PinVol.app
 
 Mantiene fijo el volumen de las apps que elijas, sin importar el volumen del sistema.
 
-**Novedades desde la 1.0**
+**Novedades desde la 1.1**
 
-- **Hasta 5 apps a la vez**, cada una con su propio nivel fijo (la 1.0 manejaba una sola). Los ajustes de la 1.0 se migran solos.
-- **Zona de arrastre adaptable**: tarjeta grande sin apps, franja compacta con 1 a 4 y oculta con 5. La ventana crece y se encoge con una animación consistente (respeta *Reducir movimiento*).
-- **Pestañas**: Apps, Ajustes y Acerca de (logo grande, versión y créditos).
-- **Búsqueda de actualizaciones**: una vez al día (opcional) consulta la última release de GitHub y muestra un aviso en la ventana y una entrada en el menú. Nunca descarga ni instala nada por su cuenta.
-- **Ícono nuevo** de la app y de la barra de menús.
-- Las apps que comparten prefijo de bundle id (por ejemplo `com.google.Chrome` y `com.google.Chrome.canary`) ya no se quitan los procesos de audio entre sí.
+- **Solo Apple Silicon.** PinVol ahora es una app arm64 nativa para Mac con Apple silicon (M1 o posterior) y macOS 14.2 o posterior, y la descarga es más liviana. Ya no se soportan los Mac Intel; la [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1), la última versión universal, sigue funcionando ahí.
+- **Ventana más fluida**: al cambiar de pestaña o al añadir y quitar apps siempre se usa la misma animación breve (respeta *Reducir movimiento*).
+- Acerca de muestra la versión sin el número de build.
+- Publicada bajo la licencia MIT.
 
-**Instalación**: abre `PinVol.dmg` y arrastra PinVol a Aplicaciones. Binario universal (Apple Silicon e Intel), macOS 14.2 o posterior. La app está firmada ad-hoc y no notarizada; si macOS dice que está «dañada», ejecuta:
+**Instalación**: abre `PinVol.dmg` y arrastra PinVol a Aplicaciones. Necesita un Mac con Apple silicon y macOS 14.2 o posterior. La app está firmada ad-hoc y no notarizada; si macOS dice que está «dañada», ejecuta:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/PinVol.app

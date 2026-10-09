@@ -48,6 +48,7 @@ jobs:
             test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
           done
           codesign --verify --verbose build/PinVol.app
+          test "$(lipo -archs build/PinVol.app/Contents/MacOS/PinVol)" = "arm64" || { echo "El binario debe ser solo arm64"; exit 1; }
           hdiutil verify dist/PinVol.dmg
 
       - uses: actions/upload-artifact@v4
@@ -56,8 +57,12 @@ jobs:
           path: dist/PinVol.dmg
           if-no-files-found: error
 
+      # Aquí solo sirve para revisar el diseño: se usan apps que ya trae el runner. Las capturas de la portada,
+      # con Spotify, IINA y TIDAL instaladas, salen del workflow «Screenshots».
       - name: Capturas de la ventana
         continue-on-error: true
+        env:
+          APPS: com.apple.Music,com.apple.Safari,com.apple.Notes,com.apple.Maps,com.apple.TextEdit
         run: ./snapshot.sh build/snapshots
 
       - uses: actions/upload-artifact@v4
