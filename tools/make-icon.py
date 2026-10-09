@@ -2,7 +2,7 @@
 
 Uso:
     python3 tools/make-icon.py                       # escribe Resources/AppIcon.icns
-    python3 tools/make-icon.py salida.png [salida.icns] [--fondo NOMBRE]
+    python3 tools/make-icon.py salida.png [salida.icns]
 
 Requiere Pillow (pip3 install pillow). Todo está dibujado a mano con formas planas,
 así que el resultado es idéntico en cualquier plataforma.
@@ -19,22 +19,12 @@ S = 1024            # tamaño final
 SS = 3              # supermuestreo para suavizar bordes
 W = S * SS
 
-# Interior del ícono: igual en todos los fondos.
+# Colores. La losa va de arriba a abajo; la sombra sale del color de abajo, oscurecido.
+TILE = ("#3b62d6", "#0e1c58")
 ARO = "#f3fff8"
 CONO = "#0b5a3c"
 NIVEL = "#4be39a"
 PIN = dict(pin="#ff5b4d", cuello="#e03f3b", aguja="#8a99a2")
-
-# Fondos: color de la losa de arriba a abajo. La sombra sale del color de abajo, oscurecido.
-FONDOS = {
-    "verde":   ("#3bdc8e", "#0f9660"),
-    "azul":    ("#5b9bff", "#1e4fd6"),
-    "marino":  ("#3b62d6", "#0e1c58"),
-    "violeta": ("#8b7bff", "#4630d6"),
-    "grafito": ("#5a5f6b", "#1d1f26"),
-    "ambar":   ("#ffd75e", "#f0901a"),
-    "arena":   ("#efe6d0", "#c8b98f"),
-}
 
 
 def px(v):
@@ -126,16 +116,15 @@ def pin_layer(tip_x, tip_y, angle, k, st):
     return layer.rotate(angle, resample=Image.BICUBIC, center=(px(tip_x), px(tip_y)))
 
 
-def make_icon(fondo="verde"):
-    arriba, abajo = FONDOS[fondo]
-    sombra = oscurecer(abajo)
+def make_icon():
+    sombra = oscurecer(TILE[1])
     img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
 
     # Losa con sombra suave, que se oscurece hacia abajo
     tile = squircle(512, 512, 412)                           # 824 px, como pide Apple
     sh = ImageChops.offset(tile, 0, px(14)).filter(ImageFilter.GaussianBlur(px(16)))
     fill(img, "#000000", sh, 0.40)
-    img.paste(vertical_gradient(arriba, abajo), (0, 0), tile)
+    img.paste(vertical_gradient(*TILE), (0, 0), tile)
     fill(img, sombra, ImageChops.multiply(bottom_ramp(), tile))
 
     cx, cy, R, r_cono, r_tapa = 512, 520, 312, 250, 90
@@ -177,14 +166,7 @@ def write_icns(icon, path):
 
 
 def main(argv):
-    fondo = "verde"
-    if "--fondo" in argv:
-        i = argv.index("--fondo")
-        fondo = argv[i + 1]
-        del argv[i:i + 2]
-    if fondo not in FONDOS:
-        sys.exit(f"fondo desconocido: {fondo} (opciones: {', '.join(FONDOS)})")
-    icon = make_icon(fondo)
+    icon = make_icon()
     if not argv:
         destino = Path(__file__).resolve().parent.parent / "Resources" / "AppIcon.icns"
         write_icns(icon, destino)

@@ -18,6 +18,14 @@ if [[ "${1:-}" == "install" ]]; then
   sleep 1
   rm -rf /Applications/PinVol.app
   ditto "$APP" /Applications/PinVol.app
+  # Launch Services guarda el ícono de cada app registrada. Sin esto, Ajustes del Sistema (ítems de inicio,
+  # barra de menús, grabación de audio) y el Dock pueden seguir mostrando un ícono anterior o el de build/.
+  LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+  if [[ -x "$LSREGISTER" ]]; then
+    "$LSREGISTER" -u "$PWD/$APP" || true
+    "$LSREGISTER" -f /Applications/PinVol.app || true
+  fi
+  touch /Applications/PinVol.app
   echo "Instalada en /Applications/PinVol.app"
   open /Applications/PinVol.app
 fi

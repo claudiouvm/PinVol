@@ -29,7 +29,7 @@ Requiere macOS 14.2 o posterior (desarrollada y probada en macOS 27) y las herra
 ./build.sh install
 ```
 
-Compila, firma ad-hoc y copia la app a `/Applications`. Sin `install`, `./build.sh` solo genera `build/PinVol.app`.
+Compila, firma ad-hoc y copia la app a `/Applications`, y refresca el registro de Launch Services para que el Dock y Ajustes del Sistema muestren el ícono actual. Sin `install`, `./build.sh` solo genera `build/PinVol.app`.
 
 La primera vez que PinVol captura el audio de una app, macOS pide el permiso **Grabación de audio del sistema**.
 
