@@ -23,11 +23,12 @@ codesign --force --sign - "$APP"
 echo "Arquitecturas: $(lipo -archs "$BIN")"
 
 VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
+CHANNEL=$(/usr/libexec/PlistBuddy -c "Print :PinVolReleaseChannel" Info.plist 2>/dev/null || true)
 STAGE=$(mktemp -d)
 ditto "$APP" "$STAGE/PinVol.app"
 ln -s /Applications "$STAGE/Applications"
 cat > "$STAGE/LEEME.txt" <<TXT
-PinVol $VER
+PinVol $CHANNEL $VER
 
 1. Arrastra PinVol a la carpeta Aplicaciones.
 2. Ábrela. La primera vez que capture el audio de una app, macOS pide el permiso

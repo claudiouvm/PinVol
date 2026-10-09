@@ -80,8 +80,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
+          CHANNEL=$(/usr/libexec/PlistBuddy -c "Print :PinVolReleaseChannel" Info.plist 2>/dev/null || true)
           if gh release view "v$VER" >/dev/null 2>&1; then
             echo "La release v$VER ya existe"
           else
-            gh release create "v$VER" dist/PinVol.dmg --title "PinVol $VER" --generate-notes --target "$GITHUB_SHA"
+            gh release create "v$VER" dist/PinVol.dmg --title "PinVol $CHANNEL $VER" --generate-notes --target "$GITHUB_SHA"
           fi
