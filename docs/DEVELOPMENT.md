@@ -2,9 +2,17 @@
 
 *Español: [DESARROLLO.md](DESARROLLO.md)*
 
+## Requirements
+
+To build PinVol you need:
+
+- A Mac with **Apple Silicon** (M1 or later), on **macOS 26 (Tahoe)** or later. `build.sh` refuses to run on Intel or under Rosetta, because the app is arm64-only.
+- **Xcode 26** or its command line tools (Swift 6.2): the app targets macOS 26 (`Package.swift`) and is built with that SDK, both on the CI and in the releases. The package itself declares `swift-tools-version:5.9` and builds in Swift 5 language mode.
+- No external dependencies. Only `tools/make-icon.py` needs more: Python 3 and Pillow (`pip3 install pillow`).
+
 ## How it works
 
-macOS has no per-app volume. PinVol uses **Core Audio process taps** (`AudioHardwareCreateProcessTap`, macOS 14.2+):
+macOS has no per-app volume. PinVol uses **Core Audio process taps** (`AudioHardwareCreateProcessTap`, an API that exists since macOS 14.2; PinVol itself requires macOS 26):
 
 1. It creates a tap on the app's processes, helpers included (it matches by bundle-id prefix, which browsers and Electron apps need). The original audio is muted. Each pinned app has its own tap and its own level; if two apps share a prefix (`com.google.Chrome` and `com.google.Chrome.canary`), the processes go to the more specific one.
 2. It plays that audio through a private aggregate device, applying a gain.
@@ -19,9 +27,9 @@ PinVol runs as **two instances of the same app**:
 - **Resident**: Dock and menu bar, audio engines and saved settings. Always alive.
 - **Interface** (`--ui`): shows the window and quits when it is closed.
 
-They talk through `DistributedNotificationCenter`. The reason is memory: opening a window makes AppKit reserve about 8 MB to draw it, plus 5–7 MB for the native switches and slider, and the system does not give them back when you close the window. With the window in another process, that memory is released on close. With the window closed the resident process uses about 15–20 MB; while it is open, the interface instance adds about 22–25 MB.
+They talk through `DistributedNotificationCenter`. The reason is memory: opening a window makes AppKit reserve about 8 MB to draw it, plus 5–7 MB for the native switches and slider, and the system does not give them back when you close the window. With the window in another process, that memory is released on close. With the window closed the resident process uses about 15–20 MB; while it is open, the interface instance adds about 22–25 MB. These figures were measured on the original single-app version and have not been measured again with five apps or on macOS 26.
 
-All controls are native AppKit (`NSSwitch`, `NSSlider`, SF Symbols) and follow light and dark mode.
+All controls are native AppKit (`NSSwitch`, `NSSlider`, SF Symbols). They follow light and dark mode and, since the app is built with the macOS 26 SDK, the system's current look.
 
 The code lives in `Sources/PinVol/`, split by responsibility:
 
@@ -46,11 +54,25 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `./build.sh install` | Also installs it in `/Applications` and opens it |
 | `tools/make-dmg.sh` | Builds the arm64 app and produces `dist/PinVol.dmg` (fails if the binary is not arm64-only) |
 | `./snapshot.sh` | Builds a development variant and renders PNG screenshots of the window (light/dark, 1 and 5 apps, every tab) into `build/snapshots/`, with no screen-recording permission needed |
-| `python3 tools/make-icon.py` | Regenerates `Resources/AppIcon.icns` and the menu bar glyphs (`MenuBar*Template*.png`). Everything is drawn in code; needs `pip3 install pillow` |
+| `python3 tools/make-icon.py` | Regenerates `Resources/AppIcon.icns` and the menu bar glyphs (`MenuBar*Template*.png`). Everything is drawn in code |
 
-The front-page screenshots (`docs/apps-claro.png`, `docs/apps-oscuro.png`) come from the manual `Screenshots` workflow, which installs Spotify, IINA and TIDAL on the runner so their real icons and names show up; copy `light-five.png` and `dark-five.png` from its `capturas-portada` artifact. The gains shown in the mockups (for example −2.3 dB or +11.9 dB) are the real ones: `snapshot.sh` computes them with the engine's formula, `dB(pinned level) − dB(system volume)`, on the speakers' quadratic curve and with the system volume at 50 % (`SYSTEM=0.4 ./snapshot.sh` to change it).
+`snapshot.sh` builds with `-DSNAPSHOT` and uses a different bundle identifier (`com.claudiouvm.pinvol.dev`), so it does not touch the real app's settings or permissions. The options of the development binary are listed at the top of `Snapshot.swift`. The script can be tuned with environment variables:
 
-`snapshot.sh` builds with `-DSNAPSHOT` and uses a different bundle identifier (`com.claudiouvm.pinvol.dev`), so it does not touch the real app's settings or permissions.
+- `APPS=com.apple.Music,com.apple.Safari,… ./snapshot.sh` chooses the five apps of the mockups. The default is Music, Safari, Spotify, IINA and TIDAL, all of which play audio; any that is not installed shows its bundle id.
+- `SYSTEM=0.4 ./snapshot.sh` sets the system volume the mockups assume (50 % by default). The gains shown (for example −2.3 dB or +11.9 dB) are the real ones: the script computes them with the engine's formula, `dB(pinned level) − dB(system volume)`, on the speakers' quadratic curve.
+- On macOS 26 the icons of freshly installed apps take a few seconds to be generated, so the script first takes throwaway shots until two in a row are identical.
+
+## CI
+
+All workflows run on the `macos-26` runner (Apple Silicon, Xcode 26) except the last one.
+
+| Workflow | When | What it does |
+|---|---|---|
+| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/` or `.md` files change) | Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
+| `Screenshots` (`screenshots.yml`) | Manual, or in a pull request that changes `snapshot.sh` or the workflow itself | Installs Spotify, IINA and TIDAL, takes the screenshots and uploads them as `capturas-portada`. The front-page images (`docs/apps-claro.png`, `docs/apps-oscuro.png`) are `light-five.png` and `dark-five.png` from that artifact. |
+| `Release notes` (`release-notes.yml`, `ubuntu-latest`) | Manual | Copies `RELEASE_NOTES.md` to the release of the version in `Info.plist`. |
+
+Swift cannot be compiled on Linux, so the CI is the real build. The artifacts are the way to review the window's design.
 
 ## Updates and releases
 
@@ -58,7 +80,15 @@ PinVol checks the latest GitHub release once a day (and on demand in **About**) 
 
 To publish a version: raise `CFBundleShortVersionString` (and `CFBundleVersion`) in `Info.plist`, update `RELEASE_NOTES.md` (English first, then Spanish; CI requires its first line to name the version) and merge to `main`. The `Release` workflow then builds the arm64 `.dmg`, commits it to `dist/PinVol.dmg` and creates the release `v<version>` with those notes if it does not exist yet. If you only change the notes, run the manual `Release notes` workflow to copy them to the existing release.
 
+Raise the version whenever the binary or its requirements change (chip, macOS, behavior): otherwise `dist/PinVol.dmg` and the attached `.dmg` of the existing release stop matching.
+
 To label a version as beta, add `PinVolReleaseChannel` = `Beta` to `Info.plist` (it shows in About and in the release title). Do not mark the release as "pre-release" on GitHub: the `releases/latest` API, which the app uses, ignores pre-releases.
+
+## Conventions
+
+- Descriptions on GitHub (pull requests, releases, issues) go in English first, then Spanish. Code, comments and commit messages are in Spanish.
+- `README.md` and `README.es.md`, and this file and `DESARROLLO.md`, are mirrors: change one, change the other.
+- Merge to `main` once the CI is green.
 
 ## Known limits
 
