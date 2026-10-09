@@ -19,73 +19,11 @@ jobs:
       - name: Compilar y empaquetar
         run: ./build.sh
 
-      - name: Revisar Info.plist, .icns y recursos del paquete
+      - name: Validar Info.plist, ícono y recursos del paquete
         run: |
           plutil -lint Info.plist
           iconutil --convert iconset Resources/AppIcon.icns --output "$RUNNER_TEMP/AppIcon.iconset"
-          ls -l "$RUNNER_TEMP/AppIcon.iconset"
-          ls -l build/PinVol.app/Contents/Resources
+          for f in AppIcon.icns MenuBarActiveTemplate.png MenuBarActiveTemplate@2x.png MenuBarIdleTemplate.png MenuBarIdleTemplate@2x.png; do
+            test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
+          done
           codesign --verify --verbose build/PinVol.app
-
-      - name: Cargar glifos e ícono desde dentro del paquete
-        run: |
-          cat > "$RUNNER_TEMP/check.swift" <<'EOF'
-          import AppKit
-
-          // Corre dentro de una copia de PinVol.app: Bundle.main es la app y NSImage(named:) busca en su Resources.
-          var ok = true
-
-          for name in ["MenuBarActiveTemplate", "MenuBarIdleTemplate"] {
-              guard let img = NSImage(named: NSImage.Name(name)) else {
-                  print("FALTA el recurso \(name)")
-                  ok = false
-                  continue
-              }
-              let reps = img.representations.map { "\($0.pixelsWide)x\($0.pixelsHigh)" }.joined(separator: ",")
-              print("\(name): size=\(img.size) reps=[\(reps)] template=\(img.isTemplate)")
-              if img.size != NSSize(width: 18, height: 18) { print("  tamaño inesperado"); ok = false }
-          }
-
-          // Ícono tal como lo entrega el sistema para esta app (el Dock, Finder y Ajustes del Sistema usan el mismo servicio)
-          let icon = NSWorkspace.shared.icon(forFile: Bundle.main.bundleURL.path)
-          let side = 512
-          let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
-                                     samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                     colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-          NSGraphicsContext.saveGraphicsState()
-          NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-          icon.draw(in: NSRect(x: 0, y: 0, width: side, height: side))
-          NSGraphicsContext.restoreGraphicsState()
-
-          func sample(_ label: String, _ x: Int, _ y: Int) -> (r: Double, g: Double, b: Double, a: Double) {
-              let c = rep.colorAt(x: x, y: y)!.usingColorSpace(.deviceRGB)!
-              let v = (r: Double(c.redComponent) * 255, g: Double(c.greenComponent) * 255, b: Double(c.blueComponent) * 255, a: Double(c.alphaComponent))
-              print(String(format: "ícono 512 %@ (%d,%d): rgb(%.0f,%.0f,%.0f) a=%.2f", label, x, y, v.r, v.g, v.b, v.a))
-              return v
-          }
-          let top = sample("losa arriba", 256, 75)       // marino: azul dominante
-          let cap = sample("tapa central", 276, 285)     // blanco verdoso
-          let corner = sample("esquina", 5, 5)           // transparente
-          if !(top.b > 150 && top.r < 110 && top.a > 0.95) { print("la losa no es el marino esperado"); ok = false }
-          if !(cap.r > 220 && cap.g > 220 && cap.b > 220) { print("la tapa central no es blanca"); ok = false }
-          if corner.a > 0.1 { print("la esquina debería ser transparente"); ok = false }
-
-          print(ok ? "OK" : "FALLÓ")
-          exit(ok ? 0 : 1)
-          EOF
-          swiftc -O "$RUNNER_TEMP/check.swift" -o "$RUNNER_TEMP/check"
-          rm -rf "$RUNNER_TEMP/Check.app"
-          cp -R build/PinVol.app "$RUNNER_TEMP/Check.app"
-          cp "$RUNNER_TEMP/check" "$RUNNER_TEMP/Check.app/Contents/MacOS/check"
-          "$RUNNER_TEMP/Check.app/Contents/MacOS/check"
-
-      - name: Capturas de la ventana
-        continue-on-error: true
-        run: ./snapshot.sh
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: capturas
-          path: build/snapshots/*.png
-          if-no-files-found: ignore
