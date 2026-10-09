@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="400" alt="Ícono de PinVol">
+  <img src="docs/icon.png" width="360" alt="Ícono de PinVol">
 </p>
 
 <h1 align="center">PinVol</h1>
