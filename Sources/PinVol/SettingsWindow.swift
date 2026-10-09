@@ -22,7 +22,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private let backend: Backend
-    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 360, height: 480),
+    let window = SettingsNSWindow(contentRect: NSRect(x: 0, y: 0, width: 360, height: 480),
                           styleMask: [.titled, .closable, .fullSizeContentView],
                           backing: .buffered, defer: true)
     private let root = NSStackView()

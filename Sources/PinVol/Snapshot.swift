@@ -1,6 +1,19 @@
 import AppKit
 
 #if SNAPSHOT
+/// Solo capturas: se hace pasar por la ventana activa para que los controles se dibujen con el color de acento
+/// (el CI no activa la app y saldrían grises, como deshabilitados).
+final class ActiveLookWindow: NSWindow {
+    override var isKeyWindow: Bool { true }
+    override var isMainWindow: Bool { true }
+    override var canBecomeKey: Bool { true }
+}
+typealias SettingsNSWindow = ActiveLookWindow
+#else
+typealias SettingsNSWindow = NSWindow
+#endif
+
+#if SNAPSHOT
 /// Solo desarrollo: traza a un archivo (el registro unificado oculta los textos dinámicos).
 func devLog(_ s: String) {
     let line = "\(getpid()) \(s)\n"
