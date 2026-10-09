@@ -2,7 +2,7 @@
 
 Uso:
     python3 tools/make-icon.py                       # escribe Resources/AppIcon.icns
-    python3 tools/make-icon.py salida.png [salida.icns] [--indicador arco|ondas]
+    python3 tools/make-icon.py salida.png [salida.icns] [--fondo verde|azul|indigo|grafito]
 
 Requiere Pillow (pip3 install pillow). Todo está dibujado a mano con formas planas,
 así que el resultado es idéntico en cualquier plataforma.
@@ -19,8 +19,17 @@ S = 1024            # tamaño final
 SS = 3              # supermuestreo para suavizar bordes
 W = S * SS
 
-C = dict(tile=("#3bdc8e", "#0f9660"), aro="#f3fff8", cono="#0b5a3c", tapa="#f3fff8",
-         pin="#ff5b4d", cuello="#e03f3b", aguja="#8a99a2", nivel="#4be39a", sombra="#032a1a")
+# Chincheta e indicador: iguales en todos los fondos.
+PIN = dict(pin="#ff5b4d", cuello="#e03f3b", aguja="#8a99a2")
+NIVEL = "#4be39a"
+
+# Fondos: losa (degradado arriba→abajo), aro y tapa, cono y color de las sombras.
+FONDOS = {
+    "verde":   dict(tile=("#3bdc8e", "#0f9660"), aro="#f3fff8", cono="#0b5a3c", sombra="#032a1a"),
+    "azul":    dict(tile=("#5b9bff", "#1e4fd6"), aro="#f5f8ff", cono="#0e2a78", sombra="#06154a"),
+    "indigo":  dict(tile=("#8b7bff", "#4630d6"), aro="#f7f5ff", cono="#241a7a", sombra="#140a55"),
+    "grafito": dict(tile=("#5a5f6b", "#1d1f26"), aro="#f4f6fa", cono="#0c0d11", sombra="#000000"),
+}
 
 
 def px(v):
@@ -52,6 +61,13 @@ def squircle(cx, cy, half, n=5.0):
 def vertical_gradient(top, bottom):
     g = Image.linear_gradient("L").resize((W, W), Image.BILINEAR)    # negro arriba → blanco abajo
     return Image.composite(Image.new("RGB", (W, W), rgb(bottom)), Image.new("RGB", (W, W), rgb(top)), g)
+
+
+def bottom_ramp(start=0.45, strength=0.34):
+    """Máscara que va de 0 (hasta `start` de la altura) a `strength` en el borde inferior."""
+    g = Image.linear_gradient("L").resize((W, W), Image.BILINEAR)
+    k = 255 * strength / (1 - start)
+    return g.point(lambda v: min(255, max(0, round((v / 255 - start) * k))))
 
 
 def fill(dst, color, m, alpha=1.0):
@@ -101,43 +117,36 @@ def pin_layer(tip_x, tip_y, angle, k, st):
     return layer.rotate(angle, resample=Image.BICUBIC, center=(px(tip_x), px(tip_y)))
 
 
-def make_icon(indicador="arco"):
+def make_icon(fondo="verde"):
+    st = {**FONDOS[fondo], **PIN}
     img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
 
-    # Losa con sombra suave
+    # Losa con sombra suave, que se oscurece hacia abajo
     tile = squircle(512, 512, 412)                           # 824 px, como pide Apple
     sh = ImageChops.offset(tile, 0, px(14)).filter(ImageFilter.GaussianBlur(px(16)))
     fill(img, "#000000", sh, 0.40)
-    img.paste(vertical_gradient(*C["tile"]), (0, 0), tile)
+    img.paste(vertical_gradient(*st["tile"]), (0, 0), tile)
+    fill(img, st["sombra"], ImageChops.multiply(bottom_ramp(), tile))
 
+    cx, cy, R, r_cono, r_tapa = 512, 520, 312, 250, 90
     angulo = 28                                              # inclinación de la chincheta
-    if indicador == "arco":
-        cx, cy, R, r_cono, r_tapa = 512, 520, 312, 250, 90
-    else:
-        cx, cy, R, r_cono, r_tapa = 422, 540, 252, 196, 72
 
-    # Sombra proyectada hacia abajo y sombreado en el borde inferior del aro
-    cast = circle(cx, cy + 30, R).filter(ImageFilter.GaussianBlur(px(24)))
-    fill(img, C["sombra"], ImageChops.multiply(cast, tile), 0.36)
-    fill(img, C["aro"], circle(cx, cy, R))
-    media_luna = ImageChops.subtract(circle(cx, cy, R), circle(cx, cy - 20, R))
-    fill(img, C["sombra"], media_luna, 0.16)
-    fill(img, C["cono"], circle(cx, cy, r_cono))
-    fill(img, C["tapa"], circle(cx, cy, r_tapa))
+    # Parlante: sombra proyectada hacia abajo, aro con borde inferior sombreado, cono y tapa
+    cast = circle(cx, cy + 44, R).filter(ImageFilter.GaussianBlur(px(28)))
+    fill(img, st["sombra"], ImageChops.multiply(cast, tile), 0.60)
+    fill(img, st["aro"], circle(cx, cy, R))
+    media_luna = ImageChops.subtract(circle(cx, cy, R), circle(cx, cy - 26, R))
+    fill(img, st["sombra"], media_luna, 0.30)
+    fill(img, st["cono"], circle(cx, cy, r_cono))
+    fill(img, st["aro"], circle(cx, cy, r_tapa))
 
-    # Indicador de volumen
-    if indicador == "arco":
-        # Dial de 270° que se llena hasta donde apunta la chincheta (el nivel fijado)
-        r_g = 0.82 * r_cono
-        fin = 270 - angulo
-        fill(img, "#ffffff", arc(cx, cy, r_g, 135, 45, 28), 0.16)
-        fill(img, C["nivel"], arc(cx, cy, r_g, 135, fin, 28))
-    else:
-        for r_w, a in ((R + 44, 1.0), (R + 92, 0.75), (R + 140, 0.5)):
-            fill(img, C["aro"], arc(cx, cy, r_w, -36, 36, 26), a)
+    # Indicador de volumen: dial de 270° que se llena hasta donde apunta la chincheta (el nivel fijado)
+    r_g = 0.82 * r_cono
+    fill(img, "#ffffff", arc(cx, cy, r_g, 135, 45, 28), 0.16)
+    fill(img, NIVEL, arc(cx, cy, r_g, 135, 270 - angulo, 28))
 
     # Chincheta clavada en la tapa; la cabeza sobresale del parlante
-    img.alpha_composite(pin_layer(cx, cy, angulo, 1.42 * R / 320, C))
+    img.alpha_composite(pin_layer(cx, cy, angulo, 1.42 * R / 320, st))
 
     return img.resize((S, S), Image.LANCZOS)
 
@@ -158,14 +167,14 @@ def write_icns(icon, path):
 
 
 def main(argv):
-    indicador = "arco"
-    if "--indicador" in argv:
-        i = argv.index("--indicador")
-        indicador = argv[i + 1]
+    fondo = "verde"
+    if "--fondo" in argv:
+        i = argv.index("--fondo")
+        fondo = argv[i + 1]
         del argv[i:i + 2]
-    if indicador not in ("arco", "ondas"):
-        sys.exit(f"indicador desconocido: {indicador} (opciones: arco, ondas)")
-    icon = make_icon(indicador)
+    if fondo not in FONDOS:
+        sys.exit(f"fondo desconocido: {fondo} (opciones: {', '.join(FONDOS)})")
+    icon = make_icon(fondo)
     if not argv:
         destino = Path(__file__).resolve().parent.parent / "Resources" / "AppIcon.icns"
         write_icns(icon, destino)
