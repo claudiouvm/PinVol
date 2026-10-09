@@ -58,11 +58,11 @@ La primera vez que PinVol captura el audio de una app, macOS pide el permiso **G
 
 PinVol consulta una vez al día (y cuando lo pides en **Acerca de**) la última release de GitHub y la compara con su versión. Si hay una nueva, muestra un aviso en la ventana y una entrada en el menú que abre la página de la release; no descarga ni instala nada por su cuenta. Se puede apagar en **Ajustes**.
 
-Versión actual: **Beta 0.3** (`PinVolReleaseChannel` = `Beta` en `Info.plist`; se muestra en Acerca de). Las releases beta no se marcan como «pre-release» en GitHub: la API `releases/latest`, que usa la app, ignora las pre-release.
+Versión actual: **1.1**. Para etiquetar una versión como beta, añade `PinVolReleaseChannel` = `Beta` en `Info.plist` (se muestra en Acerca de y en el título de la release). No la marques como «pre-release» en GitHub: la API `releases/latest`, que usa la app, ignora las pre-release.
 
 Para publicar una versión: sube `CFBundleShortVersionString` (y `CFBundleVersion`) en `Info.plist` y haz merge a `main`. El workflow `Release` crea la release `v<versión>` con el `.dmg` adjunto si todavía no existe.
 
-> La consulta usa la API pública de GitHub: solo funciona si el repositorio es **público**. Con el repositorio privado la app indica «No hay versiones publicadas (o el repositorio es privado)».
+> La consulta usa la API pública de GitHub: requiere que el repositorio sea **público** (lo es). Si volviera a ser privado, la app indicaría «No hay versiones publicadas (o el repositorio es privado)».
 
 ## Cómo funciona
 
