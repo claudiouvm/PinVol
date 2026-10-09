@@ -26,8 +26,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/apps-claro.png" width="390" alt="PinVol con cinco apps fijadas, modo claro">
-  <img src="docs/apps-oscuro.png" width="390" alt="PinVol con cinco apps fijadas, modo oscuro">
+  <img src="docs/apps-claro.es.png" width="390" alt="PinVol con cinco apps fijadas, modo claro">
+  <img src="docs/apps-oscuro.es.png" width="390" alt="PinVol con cinco apps fijadas, modo oscuro">
 </p>
 
 <p align="center">
