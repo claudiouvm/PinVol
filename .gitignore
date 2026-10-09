@@ -1,0 +1,4 @@
+.build/
+.build-snap/
+build/
+.DS_Store
