@@ -13,7 +13,23 @@ cp Info.plist "$APP/Contents/Info.plist"
 cp Resources/* "$APP/Contents/Resources/"
 codesign --force --sign - "$APP" >/dev/null 2>&1
 BIN="$APP/Contents/MacOS/PinVol"
-run() { name=$1; shift; "$BIN" --snapshot "$OUT/$name.png" "$@" >/dev/null 2>&1 || echo "falló $name"; }
+# En macOS 26 el servicio de íconos genera bajo demanda (y por separado para claro y oscuro) los de las apps recién
+# instaladas, y hasta entonces dibuja cuadros punteados. El binario comprueba que sus íconos estén de verdad y, si no,
+# sale con código 3 sin capturar: aquí se repite en un proceso nuevo (hasta 15 veces, cada 2 s). Si aun así no se generan,
+# se captura igual con --force y se avisa.
+run() {
+  local name=$1 code=0 msg=""; shift
+  for attempt in {1..15}; do
+    msg=$("$BIN" --snapshot "$OUT/$name.png" "$@" 2>&1) && code=0 || code=$?
+    if [[ $code -ne 3 ]]; then break; fi
+    sleep 2
+  done
+  if [[ $code -eq 3 ]]; then
+    echo "aviso: $name con íconos sin generar tras 15 intentos ($msg)"
+    "$BIN" --snapshot "$OUT/$name.png" --force "$@" >/dev/null 2>&1 && code=0 || code=$?
+  fi
+  if [[ $code -ne 0 ]]; then echo "falló $name"; fi
+}
 # Apps de ejemplo para las capturas de 5 apps (todas con audio). Si no están instaladas salen con el nombre del bundle id.
 # Se pueden cambiar: APPS=com.apple.Music,com.apple.Safari,... ./snapshot.sh
 APPS=${APPS:-com.apple.Music,com.apple.Safari,com.spotify.client,com.colliderli.iina,com.tidal.desktop}
@@ -26,18 +42,6 @@ SYSTEM=${SYSTEM:-0.5}
 gains() { awk -v sys="$SYSTEM" -v levels="$1" 'function db(v) { return -63.5 * (1 - sqrt(v)) } BEGIN { n = split(levels, a, ","); for (i = 1; i <= n; i++) printf "%s%.1f", (i > 1 ? "," : ""), db(a[i]) - db(sys) }'; }
 FIVE=$(gains $LEVELS)
 ONE=$(gains 0.45)
-
-# En macOS 26 el servicio de íconos tarda unos segundos en generar los de apps recién instaladas: sin esto, las primeras
-# capturas salen con cuadros punteados. Se repite una captura de calentamiento (se descarta) hasta que dos seguidas
-# son idénticas, con un máximo de 10 intentos.
-prev=""
-for attempt in 1 2 3 4 5 6 7 8 9 10; do
-  "$BIN" --snapshot "$OUT/warmup.png" --assigned $APPS --level $LEVELS >/dev/null 2>&1 || true
-  if [[ -n "$prev" ]] && cmp -s "$OUT/warmup.png" "$prev"; then break; fi
-  cp "$OUT/warmup.png" "$OUT/warmup-prev.png"; prev="$OUT/warmup-prev.png"
-  sleep 2
-done
-rm -f "$OUT/warmup.png" "$OUT/warmup-prev.png"
 
 run light-empty
 run light-assigned   --assigned com.apple.Music --level 0.45 --gains $ONE --on --status active

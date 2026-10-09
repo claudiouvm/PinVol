@@ -11,8 +11,9 @@ func devLog(_ s: String) {
 
 // MARK: - Solo desarrollo: renderiza la ventana a un PNG
 // `--snapshot out.png [--dark] [--tab apps|settings|about] [--assigned id1,id2,…] [--level x1,x2,…] [--on]
-//                     [--status kind --text t] [--gains dB1,dB2,…] [--update available|uptodate|failed]`
+//                     [--status kind --text t] [--gains dB1,dB2,…] [--update available|uptodate|failed] [--force]`
 // Con `--status active`, `--gains` pone en cada app la ganancia que mostraría («Activo · +11.9 dB»).
+// Si algún ícono aún no está generado sale con código 3 sin escribir nada; `--force` captura igual.
 
 final class StaticBackend: Backend {
     var state: AppState
@@ -29,6 +30,29 @@ final class StaticBackend: Backend {
     func quit() {}
 }
 
+/// En macOS 26 el servicio de íconos genera bajo demanda (y por separado para claro y oscuro) los de las apps recién
+/// instaladas; hasta entonces dibuja un cuadro punteado casi transparente. Dibuja el ícono como lo hace la fila de la
+/// ventana (32 pt a 2x, con la apariencia de la captura) y comprueba que cubra buena parte del cuadro.
+private func iconIsReady(_ icon: NSImage, appearance: NSAppearance) -> Bool {
+    let side = 64
+    guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
+                                     samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                     colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return true }
+    rep.size = NSSize(width: 32, height: 32)
+    guard let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return true }
+    appearance.performAsCurrentDrawingAppearance {
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        icon.draw(in: NSRect(x: 0, y: 0, width: 32, height: 32), from: .zero, operation: .sourceOver, fraction: 1)
+        NSGraphicsContext.restoreGraphicsState()
+    }
+    var opaque = 0
+    for y in 0..<side {
+        for x in 0..<side where (rep.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5 { opaque += 1 }
+    }
+    return Double(opaque) / Double(side * side) > 0.35
+}
+
 final class SnapshotDelegate: NSObject, NSApplicationDelegate {
     private var settings: SettingsWindow?
 
@@ -41,6 +65,18 @@ final class SnapshotDelegate: NSObject, NSApplicationDelegate {
         let levels = opt("--level")?.split(separator: ",").compactMap { Float($0) } ?? []
         let gains = opt("--gains")?.split(separator: ",").compactMap { Double($0) } ?? []
         let status = opt("--status").map { EngineStatus(kind: EngineStatus.Kind(rawValue: $0) ?? .idle, text: opt("--text") ?? $0) }
+        let look = NSAppearance(named: args.contains("--dark") ? .darkAqua : .aqua)!
+        // Con algún ícono sin generar la captura saldría con cuadros punteados: se pide a todos (para que se generen
+        // a la vez), se sale con código 3 y snapshot.sh repite la captura en un proceso nuevo.
+        if !args.contains("--force") {
+            let pending = ids.filter {
+                NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) != nil && !iconIsReady(appLookup($0).icon, appearance: look)
+            }
+            if !pending.isEmpty {
+                FileHandle.standardError.write(Data("íconos sin generar: \(pending.joined(separator: ", "))\n".utf8))
+                exit(3)
+            }
+        }
         for (i, id) in ids.enumerated() {
             var app = PinnedApp(id: id, level: i < levels.count ? levels[i] : (levels.last ?? 0.5))
             if var s = status {
@@ -60,7 +96,7 @@ final class SnapshotDelegate: NSObject, NSApplicationDelegate {
         settings = s
         s.select(opt("--tab") ?? "apps")
         s.window.alphaValue = 0
-        s.window.appearance = NSAppearance(named: args.contains("--dark") ? .darkAqua : .aqua)
+        s.window.appearance = look
         s.show()
         let out = opt("--snapshot")!
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {

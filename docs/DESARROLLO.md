@@ -60,7 +60,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 
 - `APPS=com.apple.Music,com.apple.Safari,… ./snapshot.sh` elige las cinco apps de los mockups. Por defecto son Music, Safari, Spotify, IINA y TIDAL, todas con audio; si alguna no está instalada, sale con su bundle id.
 - `SYSTEM=0.4 ./snapshot.sh` fija el volumen del sistema que suponen los mockups (50 % por defecto). Las ganancias que se muestran (por ejemplo −2,3 dB o +11,9 dB) son las reales: el script las calcula con la fórmula del motor, `dB(nivel fijo) − dB(volumen del sistema)`, sobre la curva cuadrática de los altavoces.
-- En macOS 26 los íconos de las apps recién instaladas tardan unos segundos en generarse, así que el script toma antes capturas de calentamiento, que descarta, hasta que dos seguidas son idénticas.
+- En macOS 26 el sistema genera bajo demanda los íconos de las apps recién instaladas (por separado para claro y oscuro) y dibuja un cuadro punteado hasta que están listos. Por eso, antes de capturar, el binario de desarrollo comprueba que cada ícono esté de verdad dibujado; si no, sale con código 3 y el script repite la captura en un proceso nuevo (hasta 15 veces, cada 2 s), y como último recurso captura igual con `--force` y avisa.
 
 ## CI
 
