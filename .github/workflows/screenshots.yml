@@ -2,8 +2,9 @@ name: Screenshots
 
 # Capturas de la ventana para la portada, con apps de audio reales instaladas (Spotify, IINA y TIDAL),
 # para que salgan con su ícono y nombre. Se ejecutan a mano, o en un PR que cambie snapshot.sh o este archivo.
-# Descarga el artefacto «capturas-portada» y copia light-five.png y dark-five.png a docs/apps-claro.png y
-# docs/apps-oscuro.png.
+# Descarga el artefacto «capturas-portada» (carpetas en/ y es/) y copia en/light-five.png y en/dark-five.png a
+# docs/apps-claro.png y docs/apps-oscuro.png (README en inglés), y es/light-five.png y es/dark-five.png a
+# docs/apps-claro.es.png y docs/apps-oscuro.es.png (README en español).
 
 on:
   workflow_dispatch:
@@ -17,7 +18,7 @@ permissions:
 
 jobs:
   capturas:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 

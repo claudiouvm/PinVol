@@ -22,9 +22,9 @@ final class DropCard: NSView {
         let icon = NSImageView(image: symbol("arrow.down.app", size: 38, weight: .light) ?? NSImage())
         icon.contentTintColor = .secondaryLabelColor
         icon.imageScaling = .scaleProportionallyUpOrDown
-        let title = makeLabel("Arrastra una app aquí", size: 13, weight: .semibold)
+        let title = makeLabel(L("Drop an app here"), size: 13, weight: .semibold)
         title.alignment = .center
-        let caption = makeLabel("Su volumen quedará fijo · hasta \(maxPinnedApps) apps", size: 11, color: .secondaryLabelColor)
+        let caption = makeLabel(L("Its volume will stay fixed · up to %ld apps", maxPinnedApps), size: 11, color: .secondaryLabelColor)
         caption.alignment = .center
         for v in [icon, title, caption] { bigStack.addArrangedSubview(v) }
         bigStack.orientation = .vertical
@@ -61,8 +61,8 @@ final class DropCard: NSView {
         bigStack.isHidden = compact
         compactStack.isHidden = !compact
         heightConstraint.constant = compact ? 44 : 140
-        compactLabel.stringValue = "Arrastra otra app aquí · \(count) de \(maxPinnedApps)"
-        toolTip = "Suelta aquí el archivo .app cuyo volumen quieres mantener fijo (hasta \(maxPinnedApps) apps)"
+        compactLabel.stringValue = L("Drop another app here · %ld of %ld", count, maxPinnedApps)
+        toolTip = L("Drop the .app whose volume you want to keep fixed (up to %ld apps)", maxPinnedApps)
         isHidden = count >= maxPinnedApps
     }
 
@@ -106,8 +106,9 @@ final class AppRow: NSView {
         icon.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
         nameLabel.stringValue = info.name
-        nameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        caption.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        // Si el estado es largo (p. ej. un error), se acorta él y no el nombre de la app; el texto completo va en el tooltip.
+        nameLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        caption.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         dot.contentTintColor = .tertiaryLabelColor
         let top = NSStackView(views: [nameLabel, spacer(), dot, caption])
         top.alignment = .centerY
@@ -117,8 +118,8 @@ final class AppRow: NSView {
         slider.action = #selector(sliderMoved)
         slider.isContinuous = true
         slider.controlSize = .small
-        slider.setAccessibilityLabel("Nivel fijo de \(info.name)")
-        slider.toolTip = "Volumen al que sonará \(info.name), en la misma escala que el volumen del sistema"
+        slider.setAccessibilityLabel(L("Fixed level for %@", info.name))
+        slider.toolTip = L("The volume %@ will play at, on the same scale as the system volume", info.name)
         percent.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         percent.alignment = .right
         percent.widthAnchor.constraint(equalToConstant: 36).isActive = true
@@ -138,8 +139,8 @@ final class AppRow: NSView {
         let remove = NSButton(image: symbol("xmark.circle.fill", size: 15) ?? NSImage(), target: self, action: #selector(removeTapped))
         remove.isBordered = false
         remove.contentTintColor = .tertiaryLabelColor
-        remove.toolTip = "Dejar de controlar \(info.name)"
-        remove.setAccessibilityLabel("Quitar \(info.name)")
+        remove.toolTip = L("Stop controlling %@", info.name)
+        remove.setAccessibilityLabel(L("Remove %@", info.name))
         remove.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
         let row = NSStackView(views: [icon, mid, remove])
@@ -160,7 +161,7 @@ final class AppRow: NSView {
     /// `updateLevel` es falso en las actualizaciones de estado, para no pisar el slider mientras se arrastra.
     func configure(_ app: PinnedApp, updateLevel: Bool) {
         if updateLevel && !dragging { slider.floatValue = app.level }
-        percent.stringValue = "\(Int((slider.floatValue * 100).rounded())) %"
+        percent.stringValue = percentText(slider.floatValue)
         let s = app.status
         caption.stringValue = Self.caption(for: s)
         dot.isHidden = caption.stringValue.isEmpty
@@ -169,7 +170,7 @@ final class AppRow: NSView {
         dot.toolTip = s.detail ?? s.text
     }
 
-    /// Texto corto para la fila: «Activo · +6.2 dB» pasa a «+6.2 dB»; en reposo no se muestra nada.
+    /// Texto corto para la fila: «Active · +6.2 dB» pasa a «+6.2 dB»; en reposo no se muestra nada.
     private static func caption(for s: EngineStatus) -> String {
         switch s.kind {
         case .idle: return ""
@@ -183,7 +184,7 @@ final class AppRow: NSView {
     @objc private func sliderMoved() {
         let t = NSApp.currentEvent?.type
         dragging = t == .leftMouseDown || t == .leftMouseDragged
-        percent.stringValue = "\(Int((slider.floatValue * 100).rounded())) %"
+        percent.stringValue = percentText(slider.floatValue)
         onLevel?(slider.floatValue)
     }
 
@@ -191,7 +192,7 @@ final class AppRow: NSView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let m = NSMenu()
-        m.addItem(withTitle: "Quitar app", action: #selector(removeTapped), keyEquivalent: "").target = self
+        m.addItem(withTitle: L("Remove app"), action: #selector(removeTapped), keyEquivalent: "").target = self
         return m
     }
 }

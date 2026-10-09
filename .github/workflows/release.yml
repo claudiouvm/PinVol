@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   dmg:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +30,10 @@ jobs:
         run: |
           sw_vers
           swift --version
+
+      # Cada texto de la interfaz (L("…")) debe tener su traducción en Resources/es.lproj/Localizable.strings.
+      - name: Comprobar las traducciones
+        run: python3 tools/check-strings.py
 
       # La variante de desarrollo (-DSNAPSHOT) tiene código propio que no entra en la compilación normal.
       - name: Compilar la variante de capturas
@@ -47,6 +51,10 @@ jobs:
           for f in AppIcon.icns MenuBarActiveTemplate.png MenuBarActiveTemplate@2x.png MenuBarIdleTemplate.png MenuBarIdleTemplate@2x.png; do
             test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
           done
+          for f in en.lproj/InfoPlist.strings es.lproj/InfoPlist.strings es.lproj/Localizable.strings; do
+            test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
+          done
+          plutil -lint Resources/en.lproj/InfoPlist.strings Resources/es.lproj/InfoPlist.strings Resources/es.lproj/Localizable.strings
           codesign --verify --verbose build/PinVol.app
           test "$(lipo -archs build/PinVol.app/Contents/MacOS/PinVol)" = "arm64" || { echo "El binario debe ser solo arm64"; exit 1; }
           hdiutil verify dist/PinVol.dmg
@@ -57,8 +65,8 @@ jobs:
           path: dist/PinVol.dmg
           if-no-files-found: error
 
-      # Aquí solo sirve para revisar el diseño: se usan apps que ya trae el runner. Las capturas de la portada,
-      # con Spotify, IINA y TIDAL instaladas, salen del workflow «Screenshots».
+      # Aquí solo sirve para revisar el diseño (en inglés y en español): se usan apps que ya trae el runner. Las capturas
+      # de la portada, con Spotify, IINA y TIDAL instaladas, salen del workflow «Screenshots».
       - name: Capturas de la ventana
         continue-on-error: true
         env:

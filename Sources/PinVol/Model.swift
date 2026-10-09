@@ -91,7 +91,7 @@ struct AppState {
 
     /// Estado general para el pie de la ventana y el menú: el de la app si hay una; un resumen si hay varias.
     var summary: EngineStatus {
-        guard !apps.isEmpty else { return EngineStatus(kind: .idle, text: "Arrastra una app para empezar") }
+        guard !apps.isEmpty else { return .dragToStart }
         if apps.count == 1 { return apps[0].status }
         let all = apps.map { $0.status }
         if let e = all.first(where: { $0.kind == .error }) { return e }
@@ -99,7 +99,8 @@ struct AppState {
         let engaged = all.filter { $0.kind == .active }.count + warning
         guard engaged > 0 else { return all[0] }
         return EngineStatus(kind: warning > 0 ? .warning : .active,
-                            text: "Activo · \(engaged) de \(apps.count) apps" + (warning > 0 ? " · al límite" : ""))
+                            text: warning > 0 ? L("Active · %ld of %ld apps · at the limit", engaged, apps.count)
+                                              : L("Active · %ld of %ld apps", engaged, apps.count))
     }
 }
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="400" alt="PinVol icon">
+  <img src="docs/icon.png" width="360" alt="PinVol icon">
 </p>
 
 <h1 align="center">PinVol</h1>
@@ -17,18 +17,17 @@
   <a href="https://github.com/claudiouvm/PinVol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/claudiouvm/PinVol?style=flat-square&color=gold"></a>
   <a href="https://github.com/claudiouvm/PinVol/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/claudiouvm/PinVol?style=flat-square&color=blue"></a>
   <a href="https://github.com/claudiouvm/PinVol/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/claudiouvm/PinVol/total?style=flat-square&color=blue"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%2014.2%2B-lightgrey?style=flat-square">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%2026%2B-lightgrey?style=flat-square">
   <img alt="Chip" src="https://img.shields.io/badge/chip-Apple%20Silicon-black?style=flat-square&logo=apple&logoColor=white">
-  <img alt="Swift" src="https://img.shields.io/badge/swift-5.9%2B-orange?style=flat-square">
-  <a href="https://github.com/claudiouvm/PinVol/actions/workflows/release.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/claudiouvm/PinVol/release.yml?branch=main&style=flat-square&label=build"></a>
+  <img alt="Swift" src="https://img.shields.io/badge/swift-6.2%2B-orange?style=flat-square">
   <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-brightgreen?style=flat-square">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
   <a href="https://github.com/claudiouvm/PinVol/pulls"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-ff69b4?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <img src="docs/apps-claro.png" width="300" alt="PinVol with five pinned apps, light mode">
-  <img src="docs/apps-oscuro.png" width="300" alt="PinVol with five pinned apps, dark mode">
+  <img src="docs/apps-claro.png" width="390" alt="PinVol with five pinned apps, light mode">
+  <img src="docs/apps-oscuro.png" width="390" alt="PinVol with five pinned apps, dark mode">
 </p>
 
 <p align="center">
@@ -52,6 +51,7 @@
 | **Drag and drop** | Drop one or several `.app` files; the window grows and shrinks with them. |
 | **Menu bar and Dock** | Open it from either one, and launch it at login. |
 | **Light and dark** | Native controls that follow your appearance. |
+| **English and Spanish** | The interface follows your Mac's language: Spanish if your Mac is set to Spanish, English otherwise. |
 | **Update check** | Tells you when a new version is out. It never installs anything by itself. |
 
 ## Install
@@ -60,7 +60,7 @@
 2. Open it and drag the app you want to pin onto the dotted area.
 3. Allow **System Audio Recording** when macOS asks.
 
-**Requires a Mac with Apple Silicon (M1 or later) and macOS 14.2 Sonoma or later.** Intel Macs are not supported; [version 1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1), the last universal build, still runs there. Keep PinVol in `/Applications`: on macOS 27 the menu bar icon only shows from there.
+**Requires a Mac with Apple Silicon (M1 or later) and macOS 26 Tahoe or later.** On macOS 14.2–15 use [version 1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2); on an Intel Mac, [version 1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1), the last universal build. Keep PinVol in `/Applications`: on macOS 27 the menu bar icon only shows from there.
 
 PinVol is ad-hoc signed and not notarized. If macOS says it is "damaged", run:
 
@@ -68,7 +68,7 @@ PinVol is ad-hoc signed and not notarized. If macOS says it is "damaged", run:
 xattr -dr com.apple.quarantine /Applications/PinVol.app
 ```
 
-**Build from source:** `./build.sh install` on a Mac with Apple Silicon (needs the Xcode command line tools).
+**Build from source:** `./build.sh install` on a Mac with Apple Silicon (needs the Xcode 26 command line tools).
 
 ## How it works
 

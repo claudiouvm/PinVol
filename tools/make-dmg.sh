@@ -21,7 +21,7 @@ cat > "$STAGE/README.txt" <<TXT
 PinVol ${CHANNEL:+$CHANNEL }$VER
 
 ENGLISH
-Requires a Mac with Apple Silicon (M1 or later) and macOS 14.2 or later.
+Requires a Mac with Apple Silicon (M1 or later) and macOS 26 (Tahoe) or later.
 1. Drag PinVol to the Applications folder.
 2. Open it. The first time it captures an app's audio, macOS asks for the
    "System Audio Recording" permission.
@@ -31,7 +31,7 @@ notarized by Apple), open Terminal and run:
    xattr -dr com.apple.quarantine /Applications/PinVol.app
 
 ESPAÑOL
-Requiere un Mac con Apple Silicon (M1 o posterior) y macOS 14.2 o posterior.
+Requiere un Mac con Apple Silicon (M1 o posterior) y macOS 26 (Tahoe) o posterior.
 1. Arrastra PinVol a la carpeta Aplicaciones.
 2. Ábrela. La primera vez que capture el audio de una app, macOS pide el permiso
    «Grabación de audio del sistema».

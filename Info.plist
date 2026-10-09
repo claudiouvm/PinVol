@@ -2,22 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array><string>en</string><string>es</string></array>
   <key>CFBundleIdentifier</key><string>com.claudiouvm.pinvol</string>
   <key>CFBundleName</key><string>PinVol</string>
   <key>CFBundleDisplayName</key><string>PinVol</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleExecutable</key><string>PinVol</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.2</string>
-  <key>CFBundleVersion</key><string>5</string>
+  <key>CFBundleShortVersionString</key><string>1.3</string>
+  <key>CFBundleVersion</key><string>6</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>NSHumanReadableCopyright</key><string>Made in Chile by Claudiouvm and Claude</string>
-  <key>LSMinimumSystemVersion</key><string>14.2</string>
+  <key>LSMinimumSystemVersion</key><string>26.0</string>
   <key>LSUIElement</key><true/>
   <key>NSAudioCaptureUsageDescription</key>
-  <string>PinVol captura el audio de la app que elijas para mantener su volumen constante.</string>
+  <string>PinVol captures the audio of the app you choose to keep its volume constant.</string>
 </dict>
 </plist>

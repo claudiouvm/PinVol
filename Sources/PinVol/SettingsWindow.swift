@@ -14,9 +14,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         case apps, settings, about
         var title: String {
             switch self {
-            case .apps: return "Apps"
-            case .settings: return "Ajustes"
-            case .about: return "Acerca de"
+            case .apps: return L("Apps")
+            case .settings: return L("Settings")
+            case .about: return L("About")
             }
         }
     }
@@ -40,7 +40,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private let loginSwitch = NSSwitch()
     private let updatesSwitch = NSSwitch()
     private let updateDetail = makeLabel("", size: 11, color: .secondaryLabelColor)
-    private let updateButton = NSButton(title: "Buscar", target: nil, action: nil)
+    private let updateButton = NSButton(title: L("Check"), target: nil, action: nil)
     private let statusDot = NSImageView()
     private let statusLabel = makeLabel("", size: 12, color: .secondaryLabelColor)
     private var tab = Tab.apps
@@ -171,7 +171,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         appIcon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let titles = NSStackView(views: [
             makeLabel("PinVol", size: 20, weight: .semibold),
-            makeLabel("Mantén fijo el volumen de tus apps", size: 12, color: .secondaryLabelColor),
+            makeLabel(L("Keep your apps' volume fixed"), size: 12, color: .secondaryLabelColor),
         ])
         titles.orientation = .vertical
         titles.alignment = .leading
@@ -197,11 +197,11 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         tabs.selectedSegment = Tab.apps.rawValue
 
         // Interruptores
-        for (sw, title, action) in [(enableSwitch, "Mantener nivel fijo", #selector(enabledChanged)),
-                                    (dockSwitch, "Mostrar en el Dock", #selector(dockChanged)),
-                                    (menuBarSwitch, "Mostrar en la barra de menús", #selector(menuBarChanged)),
-                                    (loginSwitch, "Abrir al iniciar sesión", #selector(loginChanged)),
-                                    (updatesSwitch, "Buscar actualizaciones", #selector(updatesChanged))] {
+        for (sw, title, action) in [(enableSwitch, L("Keep levels fixed"), #selector(enabledChanged)),
+                                    (dockSwitch, L("Show in the Dock"), #selector(dockChanged)),
+                                    (menuBarSwitch, L("Show in the menu bar"), #selector(menuBarChanged)),
+                                    (loginSwitch, L("Open at login"), #selector(loginChanged)),
+                                    (updatesSwitch, L("Check for updates"), #selector(updatesChanged))] {
             sw.target = self
             sw.action = action
             sw.setAccessibilityLabel(title)
@@ -212,18 +212,18 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         panel.onRemove = { [weak self] id in self?.removeApp(id) }
         panel.onLevel = { [weak self] id, v in self?.backend.setLevel(id, v) }
         let enableCard = Card(rows: [
-            formRow("Mantener nivel fijo", detail: "Compensa el volumen general del Mac", control: enableSwitch),
+            formRow(L("Keep levels fixed"), detail: L("Offsets your Mac's system volume"), control: enableSwitch),
         ])
         fill(appsPage, with: [panel, enableCard])
 
         // Pestaña Ajustes
         let presence = Card(rows: [
-            formRow("Mostrar en el Dock", control: dockSwitch),
-            formRow("Mostrar en la barra de menús", control: menuBarSwitch),
-            formRow("Abrir al iniciar sesión", control: loginSwitch),
+            formRow(L("Show in the Dock"), control: dockSwitch),
+            formRow(L("Show in the menu bar"), control: menuBarSwitch),
+            formRow(L("Open at login"), control: loginSwitch),
         ])
         let updates = Card(rows: [
-            formRow("Buscar actualizaciones", detail: "Consulta GitHub una vez al día", control: updatesSwitch),
+            formRow(L("Check for updates"), detail: L("Checks GitHub once a day"), control: updatesSwitch),
         ])
         fill(settingsPage, with: [presence, updates])
 
@@ -235,10 +235,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         statusDot.contentTintColor = .tertiaryLabelColor
         statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let quit = NSButton(title: "Salir", target: self, action: #selector(quitTapped))
+        let quit = NSButton(title: L("Quit"), target: self, action: #selector(quitTapped))
         quit.bezelStyle = .rounded
         quit.controlSize = .small
-        quit.toolTip = "Cierra PinVol por completo: la app deja de controlar el volumen"
+        quit.toolTip = L("Quits PinVol completely: the app stops controlling the volume")
         let footer = NSStackView(views: [statusDot, statusLabel, spacer(), quit])
         footer.alignment = .centerY
         footer.distribution = .fill
@@ -283,17 +283,17 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         logo.widthAnchor.constraint(equalToConstant: 112).isActive = true
         logo.heightAnchor.constraint(equalToConstant: 112).isActive = true
         let name = makeLabel("PinVol", size: 24, weight: .semibold)
-        let versionLabel = makeLabel("Versión \(channel)\(version)", size: 12, color: .secondaryLabelColor)
-        let madeIn = makeLabel("Made in Chile by Claudiouvm and Claude <3", size: 12)
+        let versionLabel = makeLabel(L("Version %@", channel + version), size: 12, color: .secondaryLabelColor)
+        let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude <3"), size: 12)
 
         updateButton.bezelStyle = .rounded
         updateButton.controlSize = .small
         updateButton.target = self
         updateButton.action = #selector(updateButtonTapped)
         updateDetail.lineBreakMode = .byTruncatingTail
-        let updateCard = Card(rows: [formRow("Actualizaciones", detailLabel: updateDetail, control: updateButton)])
+        let updateCard = Card(rows: [formRow(L("Updates"), detailLabel: updateDetail, control: updateButton)])
 
-        let github = NSButton(title: "Código fuente en GitHub", target: self, action: #selector(openGitHub))
+        let github = NSButton(title: L("Source code on GitHub"), target: self, action: #selector(openGitHub))
         github.isBordered = false
         github.contentTintColor = .linkColor
         github.font = .systemFont(ofSize: 12)
@@ -376,26 +376,26 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         var color = NSColor.secondaryLabelColor
         switch u.kind {
         case .idle:
-            updateDetail.stringValue = "Versión \(current)"
-            updateButton.title = "Buscar"
+            updateDetail.stringValue = L("Version %@", current)
+            updateButton.title = L("Check")
         case .checking:
-            updateDetail.stringValue = "Buscando…"
-            updateButton.title = "Buscar"
+            updateDetail.stringValue = L("Checking…")
+            updateButton.title = L("Check")
         case .upToDate:
-            updateDetail.stringValue = "Estás al día · \(current)"
-            updateButton.title = "Buscar"
+            updateDetail.stringValue = L("Up to date · %@", current)
+            updateButton.title = L("Check")
         case .available:
-            updateDetail.stringValue = "Nueva versión \(u.latest ?? "")"
-            updateButton.title = "Descargar"
+            updateDetail.stringValue = L("New version %@", u.latest ?? "")
+            updateButton.title = L("Download")
         case .failed:
-            updateDetail.stringValue = u.message ?? "No se pudo comprobar"
-            updateButton.title = "Reintentar"
+            updateDetail.stringValue = u.message ?? L("Couldn't check")
+            updateButton.title = L("Retry")
             color = .systemOrange
         }
         updateButton.isEnabled = u.kind != .checking
         updateDetail.textColor = color
         updateDetail.toolTip = updateDetail.stringValue
-        updateBanner.title = "Nueva versión \(u.latest ?? "") disponible · Descargar"
+        updateBanner.title = L("Version %@ available · Download", u.latest ?? "")
         refreshBanner()
     }
 
@@ -433,11 +433,11 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             added += 1
         }
         if overflow > 0 {
-            flash("Máximo \(maxPinnedApps) apps: quita una para añadir otra")
+            flash(L("Maximum %ld apps: remove one to add another", maxPinnedApps))
         } else if added == 0 && unreadable > 0 {
-            flash("No se pudo leer esa app", kind: .error)
+            flash(L("Couldn't read that app"), kind: .error)
         } else if added == 0 && repeated > 0 {
-            flash("Esa app ya está en la lista")
+            flash(L("That app is already in the list"))
         }
     }
 
@@ -462,7 +462,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             if loginSwitch.state == .on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
         } catch {
             loginSwitch.state = SMAppService.mainApp.status == .enabled ? .on : .off
-            flash("No se pudo cambiar el inicio de sesión", kind: .error, detail: error.localizedDescription)
+            flash(L("Couldn't change the login setting"), kind: .error, detail: error.localizedDescription)
         }
     }
 }

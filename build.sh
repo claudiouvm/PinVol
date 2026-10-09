@@ -12,7 +12,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/PinVol "$APP/Contents/MacOS/PinVol"
 cp Info.plist "$APP/Contents/Info.plist"
-cp Resources/* "$APP/Contents/Resources/"   # ícono de la app y glifos de la barra de menús
+cp -R Resources/* "$APP/Contents/Resources/"   # ícono de la app, glifos de la barra de menús y traducciones (*.lproj)
 strip -x "$APP/Contents/MacOS/PinVol"
 codesign --force --sign - "$APP"
 echo "OK -> $PWD/$APP ($(du -sh "$APP" | cut -f1))"

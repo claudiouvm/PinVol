@@ -13,8 +13,8 @@ func installMainMenu(quitAction: Selector, quitTitle: String, extra: [NSMenuItem
     appItem.submenu = appMenu
     let windowItem = NSMenuItem()
     main.addItem(windowItem)
-    let windowMenu = NSMenu(title: "Ventana")
-    windowMenu.addItem(withTitle: "Cerrar", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+    let windowMenu = NSMenu(title: L("Window"))
+    windowMenu.addItem(withTitle: L("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
     windowItem.submenu = windowMenu
     NSApp.mainMenu = main
 }
@@ -27,7 +27,7 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ n: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        installMainMenu(quitAction: #selector(quitAll), quitTitle: "Salir de PinVol")
+        installMainMenu(quitAction: #selector(quitAll), quitTitle: L("Quit PinVol"))
         // La ventana se abre con el primer estado recibido (o a los 1,5 s si la residente no responde).
         backend.onState = { [weak self] _, _ in self?.open() }
         backend.onShow = { [weak self] in

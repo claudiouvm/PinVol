@@ -19,10 +19,10 @@ enum UpdateError: Error {
 
     var message: String {
         switch self {
-        case .notFound: return "No hay versiones publicadas (o el repositorio es privado)"
-        case .rateLimited: return "GitHub limitó las consultas; reintenta más tarde"
-        case .network(let m): return "Sin conexión: \(m)"
-        case .badResponse: return "Respuesta inesperada de GitHub"
+        case .notFound: return L("No releases published (or the repository is private)")
+        case .rateLimited: return L("GitHub rate-limited the requests; try again later")
+        case .network(let m): return L("No connection: %@", m)
+        case .badResponse: return L("Unexpected response from GitHub")
         }
     }
 }
