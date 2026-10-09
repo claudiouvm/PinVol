@@ -14,7 +14,9 @@ cp Resources/* "$APP/Contents/Resources/"
 codesign --force --sign - "$APP" >/dev/null 2>&1
 BIN="$APP/Contents/MacOS/PinVol"
 run() { name=$1; shift; "$BIN" --snapshot "$OUT/$name.png" "$@" >/dev/null 2>&1 || echo "falló $name"; }
-APPS=com.apple.Music,com.apple.Safari,com.apple.Notes,com.apple.Maps,com.apple.TextEdit
+# Apps de ejemplo para las capturas de 5 apps (todas con audio). Si no están instaladas salen con el nombre del bundle id.
+# Se pueden cambiar: APPS=com.apple.Music,com.apple.Safari,... ./snapshot.sh
+APPS=${APPS:-com.apple.Music,com.apple.Safari,com.spotify.client,com.colliderli.iina,com.tidal.desktop}
 run light-empty
 run light-assigned   --assigned com.apple.Music --level 0.45 --on --status active --text "Activo · +6.2 dB"
 run light-five       --assigned $APPS --level 0.45,0.8,0.3,0.6,0.15 --on --status active --text "Activo · +6.2 dB"

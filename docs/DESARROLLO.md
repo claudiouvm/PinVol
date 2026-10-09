@@ -42,11 +42,13 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 
 | Comando | Qué hace |
 |---|---|
-| `./build.sh` | Compila y genera `build/PinVol.app` |
+| `./build.sh` | Compila y genera `build/PinVol.app` (solo Apple Silicon: se niega a correr en Intel o bajo Rosetta) |
 | `./build.sh install` | Además la instala en `/Applications` y la abre |
-| `tools/make-dmg.sh` | Compila un binario universal y genera `dist/PinVol.dmg` |
+| `tools/make-dmg.sh` | Compila la app arm64 y genera `dist/PinVol.dmg` (falla si el binario no es solo arm64) |
 | `./snapshot.sh` | Compila una variante de desarrollo y genera capturas PNG de la ventana (claro/oscuro, 1 y 5 apps, cada pestaña) en `build/snapshots/`, sin necesitar permiso de grabación de pantalla |
 | `python3 tools/make-icon.py` | Regenera `Resources/AppIcon.icns` y los glifos de la barra de menús (`MenuBar*Template*.png`). Todo está dibujado en código; requiere `pip3 install pillow` |
+
+Las capturas de la portada (`docs/apps-claro.png`, `docs/apps-oscuro.png`) salen del workflow manual `Screenshots`, que instala Spotify, IINA y TIDAL en el runner para que aparezcan sus íconos y nombres reales; copia `light-five.png` y `dark-five.png` de su artefacto `capturas-portada`.
 
 `snapshot.sh` compila con `-DSNAPSHOT` y usa otro identificador (`com.claudiouvm.pinvol.dev`), así que no toca los ajustes ni los permisos de la app real.
 
@@ -54,12 +56,13 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 
 PinVol consulta una vez al día (y cuando lo pides en **Acerca de**) la última release de GitHub y la compara con su versión. Si hay una nueva, muestra un aviso en la ventana y una entrada en el menú que abre la página de la release; no descarga ni instala nada. Se puede apagar en **Ajustes**. La consulta usa la API pública de GitHub, así que el repositorio debe ser público.
 
-Para publicar una versión: sube `CFBundleShortVersionString` (y `CFBundleVersion`) en `Info.plist`, actualiza `RELEASE_NOTES.md` (inglés y después español; el CI exige que su primera línea nombre la versión) y haz merge a `main`. El workflow `Release` compila el `.dmg` universal, lo guarda en `dist/PinVol.dmg` y crea la release `v<versión>` con esas notas si todavía no existe. Si solo cambias las notas, ejecuta el workflow manual `Release notes` para copiarlas a la release existente.
+Para publicar una versión: sube `CFBundleShortVersionString` (y `CFBundleVersion`) en `Info.plist`, actualiza `RELEASE_NOTES.md` (inglés y después español; el CI exige que su primera línea nombre la versión) y haz merge a `main`. El workflow `Release` compila el `.dmg` arm64, lo guarda en `dist/PinVol.dmg` y crea la release `v<versión>` con esas notas si todavía no existe. Si solo cambias las notas, ejecuta el workflow manual `Release notes` para copiarlas a la release existente.
 
 Para etiquetar una versión como beta, añade `PinVolReleaseChannel` = `Beta` en `Info.plist` (se muestra en Acerca de y en el título de la release). No marques la release como «pre-release» en GitHub: la API `releases/latest`, que usa la app, ignora las pre-release.
 
 ## Límites conocidos
 
+- Solo Apple Silicon (arm64, macOS 14.2 o posterior; la 14.2 es la primera con process taps). Los Mac Intel no están soportados.
 - El máximo es de 5 apps a la vez (`maxPinnedApps` en `Model.swift`): cada una abre su propio tap y su propio dispositivo agregado.
 - Con el volumen del sistema muy bajo y un nivel fijo alto, la ganancia llega al máximo (+24 dB) y ya no se puede compensar más; la línea de estado lo indica.
 - En salidas sin control de volumen por software (algunas HDMI o USB) no hay nada que compensar y la app lo avisa.

@@ -1,0 +1,45 @@
+name: Screenshots
+
+# Capturas de la ventana para la portada, con apps de audio reales instaladas (Spotify, IINA y TIDAL),
+# para que salgan con su ícono y nombre. Se ejecutan a mano, o en un PR que cambie snapshot.sh o este archivo.
+# Descarga el artefacto «capturas-portada» y copia light-five.png y dark-five.png a docs/apps-claro.png y
+# docs/apps-oscuro.png.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - snapshot.sh
+      - .github/workflows/screenshots.yml
+
+permissions:
+  contents: read
+
+jobs:
+  capturas:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar las apps de ejemplo
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          for cask in spotify iina tidal; do
+            brew install --cask "$cask" || echo "No se pudo instalar $cask"
+          done
+          LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+          for app in Spotify IINA TIDAL; do
+            if [[ -d "/Applications/$app.app" ]]; then "$LSREGISTER" -f "/Applications/$app.app"; else echo "Falta /Applications/$app.app"; fi
+          done
+          ls /Applications
+
+      - name: Capturas
+        run: ./snapshot.sh build/snapshots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas-portada
+          path: build/snapshots
+          if-no-files-found: error
