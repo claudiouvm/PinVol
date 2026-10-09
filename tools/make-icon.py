@@ -2,7 +2,7 @@
 
 Uso:
     python3 tools/make-icon.py                       # escribe Resources/AppIcon.icns
-    python3 tools/make-icon.py salida.png [salida.icns] [--fondo verde|azul|indigo|grafito]
+    python3 tools/make-icon.py salida.png [salida.icns] [--fondo NOMBRE]
 
 Requiere Pillow (pip3 install pillow). Todo está dibujado a mano con formas planas,
 así que el resultado es idéntico en cualquier plataforma.
@@ -19,16 +19,21 @@ S = 1024            # tamaño final
 SS = 3              # supermuestreo para suavizar bordes
 W = S * SS
 
-# Chincheta e indicador: iguales en todos los fondos.
-PIN = dict(pin="#ff5b4d", cuello="#e03f3b", aguja="#8a99a2")
+# Interior del ícono: igual en todos los fondos.
+ARO = "#f3fff8"
+CONO = "#0b5a3c"
 NIVEL = "#4be39a"
+PIN = dict(pin="#ff5b4d", cuello="#e03f3b", aguja="#8a99a2")
 
-# Fondos: losa (degradado arriba→abajo), aro y tapa, cono y color de las sombras.
+# Fondos: color de la losa de arriba a abajo. La sombra sale del color de abajo, oscurecido.
 FONDOS = {
-    "verde":   dict(tile=("#3bdc8e", "#0f9660"), aro="#f3fff8", cono="#0b5a3c", sombra="#032a1a"),
-    "azul":    dict(tile=("#5b9bff", "#1e4fd6"), aro="#f5f8ff", cono="#0e2a78", sombra="#06154a"),
-    "indigo":  dict(tile=("#8b7bff", "#4630d6"), aro="#f7f5ff", cono="#241a7a", sombra="#140a55"),
-    "grafito": dict(tile=("#5a5f6b", "#1d1f26"), aro="#f4f6fa", cono="#0c0d11", sombra="#000000"),
+    "verde":   ("#3bdc8e", "#0f9660"),
+    "azul":    ("#5b9bff", "#1e4fd6"),
+    "marino":  ("#3b62d6", "#0e1c58"),
+    "violeta": ("#8b7bff", "#4630d6"),
+    "grafito": ("#5a5f6b", "#1d1f26"),
+    "ambar":   ("#ffd75e", "#f0901a"),
+    "arena":   ("#efe6d0", "#c8b98f"),
 }
 
 
@@ -39,6 +44,10 @@ def px(v):
 
 def rgb(h):
     return tuple(int(h.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def oscurecer(h, f=0.28):
+    return "#%02x%02x%02x" % tuple(round(c * f) for c in rgb(h))
 
 
 def mask():
@@ -118,27 +127,28 @@ def pin_layer(tip_x, tip_y, angle, k, st):
 
 
 def make_icon(fondo="verde"):
-    st = {**FONDOS[fondo], **PIN}
+    arriba, abajo = FONDOS[fondo]
+    sombra = oscurecer(abajo)
     img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
 
     # Losa con sombra suave, que se oscurece hacia abajo
     tile = squircle(512, 512, 412)                           # 824 px, como pide Apple
     sh = ImageChops.offset(tile, 0, px(14)).filter(ImageFilter.GaussianBlur(px(16)))
     fill(img, "#000000", sh, 0.40)
-    img.paste(vertical_gradient(*st["tile"]), (0, 0), tile)
-    fill(img, st["sombra"], ImageChops.multiply(bottom_ramp(), tile))
+    img.paste(vertical_gradient(arriba, abajo), (0, 0), tile)
+    fill(img, sombra, ImageChops.multiply(bottom_ramp(), tile))
 
     cx, cy, R, r_cono, r_tapa = 512, 520, 312, 250, 90
     angulo = 28                                              # inclinación de la chincheta
 
     # Parlante: sombra proyectada hacia abajo, aro con borde inferior sombreado, cono y tapa
     cast = circle(cx, cy + 44, R).filter(ImageFilter.GaussianBlur(px(28)))
-    fill(img, st["sombra"], ImageChops.multiply(cast, tile), 0.60)
-    fill(img, st["aro"], circle(cx, cy, R))
+    fill(img, sombra, ImageChops.multiply(cast, tile), 0.60)
+    fill(img, ARO, circle(cx, cy, R))
     media_luna = ImageChops.subtract(circle(cx, cy, R), circle(cx, cy - 26, R))
-    fill(img, st["sombra"], media_luna, 0.30)
-    fill(img, st["cono"], circle(cx, cy, r_cono))
-    fill(img, st["aro"], circle(cx, cy, r_tapa))
+    fill(img, sombra, media_luna, 0.30)
+    fill(img, CONO, circle(cx, cy, r_cono))
+    fill(img, ARO, circle(cx, cy, r_tapa))
 
     # Indicador de volumen: dial de 270° que se llena hasta donde apunta la chincheta (el nivel fijado)
     r_g = 0.82 * r_cono
@@ -146,7 +156,7 @@ def make_icon(fondo="verde"):
     fill(img, NIVEL, arc(cx, cy, r_g, 135, 270 - angulo, 28))
 
     # Chincheta clavada en la tapa; la cabeza sobresale del parlante
-    img.alpha_composite(pin_layer(cx, cy, angulo, 1.42 * R / 320, st))
+    img.alpha_composite(pin_layer(cx, cy, angulo, 1.42 * R / 320, PIN))
 
     return img.resize((S, S), Image.LANCZOS)
 
