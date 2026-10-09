@@ -46,6 +46,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private var tab = Tab.apps
     private var sized = false
     private var flashItem: DispatchWorkItem?
+    private var resizeTimer: Timer?
+    private var resizeTarget: CGFloat = 0
+    private static let resizeDuration: TimeInterval = 0.25
     var onClose: (() -> Void)?
 
     init(backend: Backend) {
@@ -85,7 +88,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         onClose?()
     }
 
-    func windowDidMove(_ notification: Notification) { savePosition() }
+    func windowDidMove(_ notification: Notification) { if resizeTimer == nil { savePosition() } }
 
     // MARK: Posición y tamaño
 
@@ -108,16 +111,44 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         window.center()
     }
 
+    /// El tamaño de la ventana lo decide el código, no el Auto Layout del contenido: si el contenido nuevo es más alto,
+    /// AppKit agrandaría la ventana de golpe, sin animación. Por eso `root` cuelga de un contenedor sin restricción inferior.
+    private var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
     /// Ajusta la altura de la ventana al contenido actual, manteniendo fija su esquina superior izquierda.
+    /// Siempre con la misma animación (duración y curva); sin ella si el usuario pidió reducir el movimiento.
     private func fitWindow(animated: Bool) {
         guard sized, let content = window.contentView else { return }
         root.layoutSubtreeIfNeeded()
-        let dh = root.fittingSize.height - content.frame.height
-        guard abs(dh) > 0.5 else { return }
-        var frame = window.frame
-        frame.size.height += dh
-        frame.origin.y -= dh
-        window.setFrame(frame, display: true, animate: animated && window.isVisible)
+        let target = root.fittingSize.height + (window.frame.height - content.frame.height)
+        if resizeTimer != nil, abs(target - resizeTarget) < 0.5 { return }   // ya va hacia ahí
+        resizeTimer?.invalidate()
+        resizeTimer = nil
+        let from = window.frame.height
+        guard abs(target - from) > 0.5 else { return }
+        guard animated, window.isVisible, !reduceMotion else { return setWindowHeight(target) }
+
+        resizeTarget = target
+        let start = ProcessInfo.processInfo.systemUptime
+        let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] t in
+            guard let self else { return t.invalidate() }
+            let p = min((ProcessInfo.processInfo.systemUptime - start) / SettingsWindow.resizeDuration, 1)
+            let eased = p < 0.5 ? 4 * p * p * p : 1 - pow(-2 * p + 2, 3) / 2   // ease in-out cúbica
+            self.setWindowHeight(from + (target - from) * CGFloat(eased))
+            if p >= 1 {
+                t.invalidate()
+                self.resizeTimer = nil
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        resizeTimer = timer
+    }
+
+    private func setWindowHeight(_ h: CGFloat) {
+        var f = window.frame
+        f.origin.y = f.maxY - h
+        f.size.height = h
+        window.setFrame(f, display: true)
     }
 
     // MARK: Interfaz
@@ -224,9 +255,14 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         for v in sections { v.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -40).isActive = true }
         root.widthAnchor.constraint(equalToConstant: SettingsWindow.width).isActive = true
 
-        let vc = NSViewController()
-        vc.view = root
-        window.contentViewController = vc
+        let container = NSView()
+        root.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(root)
+        NSLayoutConstraint.activate([
+            root.topAnchor.constraint(equalTo: container.topAnchor),
+            root.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+        ])
+        window.contentView = container
         window.title = "PinVol"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
@@ -240,7 +276,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private func buildAbout() {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "?"
-        let build = info?["CFBundleVersion"] as? String ?? "?"
         let channel = (info?["PinVolReleaseChannel"] as? String).map { "\($0) " } ?? ""
 
         let logo = NSImageView(image: NSApp.applicationIconImage)
@@ -248,7 +283,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         logo.widthAnchor.constraint(equalToConstant: 112).isActive = true
         logo.heightAnchor.constraint(equalToConstant: 112).isActive = true
         let name = makeLabel("PinVol", size: 24, weight: .semibold)
-        let versionLabel = makeLabel("Versión \(channel)\(version) (\(build))", size: 12, color: .secondaryLabelColor)
+        let versionLabel = makeLabel("Versión \(channel)\(version)", size: 12, color: .secondaryLabelColor)
         let madeIn = makeLabel("Made in Chile by Claudiouvm and Claude <3", size: 12)
 
         updateButton.bezelStyle = .rounded
@@ -276,14 +311,25 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private func showTab(_ t: Tab, animated: Bool) {
+        let changed = t != tab
         tab = t
         tabs.selectedSegment = t.rawValue
-        appsPage.isHidden = t != .apps
-        settingsPage.isHidden = t != .settings
-        aboutPage.isHidden = t != .about
+        let pages = [appsPage, settingsPage, aboutPage]
+        for (i, page) in pages.enumerated() {
+            page.isHidden = i != t.rawValue
+            page.alphaValue = 1
+        }
         header.isHidden = t == .about
         refreshBanner()
         fitWindow(animated: animated)
+        if animated && changed && sized && !reduceMotion {   // la página nueva aparece con un fundido, a la par del cambio de tamaño
+            let incoming = pages[t.rawValue]
+            incoming.alphaValue = 0
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = SettingsWindow.resizeDuration
+                incoming.animator().alphaValue = 1
+            }
+        }
     }
 
     /// Refleja en los controles lo que dice el estado.
