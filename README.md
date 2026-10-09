@@ -63,7 +63,7 @@ Todos los controles son nativos de AppKit (`NSSwitch`, `NSSlider`, símbolos SF)
 | `./build.sh` | Compila y genera `build/PinVol.app` |
 | `./build.sh install` | Además la instala en `/Applications` y la abre |
 | `./snapshot.sh` | Compila una variante de desarrollo y genera capturas PNG de la ventana (claro/oscuro) en `build/snapshots/`, sin necesitar permiso de grabación de pantalla |
-| `tools/make-icon.sh` | Regenera `Resources/AppIcon.icns` |
+| `python3 tools/make-icon.py` | Regenera `Resources/AppIcon.icns` (el ícono está dibujado en código; requiere `pip3 install pillow`) |
 
 `snapshot.sh` compila con `-DSNAPSHOT` y usa otro identificador (`com.claudiouvm.pinvol.dev`), así que no toca los ajustes ni los permisos de la app real.
 
