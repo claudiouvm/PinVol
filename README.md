@@ -5,8 +5,9 @@ App nativa de macOS que mantiene **fijo el volumen de una app**, sin importar cu
 Nació para un caso concreto: una app que simula el sonido de un teclado mecánico al teclear y que no debía bajar de volumen cuando se baja el volumen general del Mac (para escuchar música o ver un video más bajo).
 
 <p align="center">
-  <img src="docs/ventana-claro.png" width="300" alt="Ventana de PinVol en modo claro">
-  <img src="docs/ventana-oscuro.png" width="300" alt="Ventana de PinVol en modo oscuro">
+  <img src="docs/apps-claro.png" width="260" alt="Pestaña Apps con 5 apps, modo claro">
+  <img src="docs/apps-oscuro.png" width="260" alt="Pestaña Apps con 5 apps, modo oscuro">
+  <img src="docs/acerca-de.png" width="260" alt="Pestaña Acerca de">
 </p>
 
 ## Uso
