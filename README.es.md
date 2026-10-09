@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="Ícono de PinVol">
+  <img src="docs/icon.png" width="300" alt="Ícono de PinVol">
 </p>
 
 <h1 align="center">PinVol</h1>
 
 <p align="center">
-  <b>Fija el volumen de tus apps en el Mac.</b><br>
-  Mantén hasta 5 apps a un nivel fijo, sin importar el volumen del sistema.
+  <b>Volumen fijo para las apps de tu Mac.</b><br>
+  Fija hasta 5 apps en su propio nivel, sin importar el volumen del sistema.
 </p>
 
 <p align="center">
@@ -14,10 +14,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/claudiouvm/PinVol/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/claudiouvm/PinVol?style=flat-square&color=blue"></a>
+  <a href="https://github.com/claudiouvm/PinVol/stargazers"><img alt="Estrellas" src="https://img.shields.io/github/stars/claudiouvm/PinVol?style=flat-square&color=gold&label=estrellas"></a>
+  <a href="https://github.com/claudiouvm/PinVol/releases/latest"><img alt="Versión" src="https://img.shields.io/github/v/release/claudiouvm/PinVol?style=flat-square&color=blue&label=versi%C3%B3n"></a>
   <img alt="Plataforma" src="https://img.shields.io/badge/plataforma-macOS%2014.2%2B-lightgrey?style=flat-square">
-  <img alt="Arquitectura" src="https://img.shields.io/badge/Apple%20Silicon%20%2B%20Intel-universal-orange?style=flat-square">
-  <img alt="Hecho en Chile" src="https://img.shields.io/badge/hecho%20en-Chile-red?style=flat-square">
+  <img alt="Telemetría" src="https://img.shields.io/badge/telemetr%C3%ADa-ninguna-brightgreen?style=flat-square">
+  <a href="LICENSE"><img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-green?style=flat-square"></a>
+  <a href="https://github.com/claudiouvm/PinVol/pulls"><img alt="PRs bienvenidos" src="https://img.shields.io/badge/PRs-bienvenidos-ff69b4?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -67,6 +69,10 @@ xattr -dr com.apple.quarantine /Applications/PinVol.app
 ## Cómo funciona
 
 macOS no tiene volumen por app. PinVol captura el audio de cada app fijada, silencia el original y lo reproduce por tu dispositivo de salida con una ganancia de *nivel fijo ÷ volumen del sistema*, que recalcula cada vez que cambia el volumen del sistema. Más detalle en [docs/DESARROLLO.md](docs/DESARROLLO.md).
+
+## Licencia
+
+[MIT](LICENSE) © Claudiouvm
 
 * * *
 

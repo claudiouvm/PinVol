@@ -9,6 +9,7 @@
 - **Versión**: se define en `Info.plist` (`CFBundleShortVersionString`). Al subirla, actualiza también
   `RELEASE_NOTES.md` (inglés y después español; el CI exige que su primera línea nombre la versión). El workflow
   `Release` publica `v<versión>` con esas notas y deja `dist/PinVol.dmg` al día.
+- **Licencia**: MIT (`LICENSE`, © Claudiouvm); el botón «license» de los README la nombra.
 - La app no se notariza (decisión del dueño): va firmada ad-hoc.
 - No se puede compilar Swift/AppKit en Linux; el CI de macOS (`.github/workflows/release.yml`) es la compilación real.
   Sus capturas (artefacto `capturas`, a 2x) sirven para revisar el diseño y actualizar `docs/*.png`.
