@@ -1,0 +1,88 @@
+name: Release
+
+# En cada PR compila y deja el .dmg como artefacto.
+# En main, además, actualiza dist/PinVol.dmg en el repo y publica una release (v<versión de Info.plist>)
+# si esa versión aún no existe. La comprobación de actualizaciones de la app consulta esa release.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['dist/**', 'docs/**', '**/*.md']
+  pull_request:
+    paths-ignore: ['dist/**', 'docs/**', '**/*.md']
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Entorno
+        run: |
+          sw_vers
+          swift --version
+
+      # La variante de desarrollo (-DSNAPSHOT) tiene código propio que no entra en la compilación normal.
+      - name: Compilar la variante de capturas
+        run: swift build -c release -Xswiftc -DSNAPSHOT --scratch-path .build-snap
+
+      - name: Compilar y empaquetar el .dmg
+        run: tools/make-dmg.sh
+
+      - name: Comprobar el paquete
+        run: |
+          plutil -lint Info.plist
+          iconutil --convert iconset Resources/AppIcon.icns --output "$RUNNER_TEMP/AppIcon.iconset"
+          for f in AppIcon.icns MenuBarActiveTemplate.png MenuBarActiveTemplate@2x.png MenuBarIdleTemplate.png MenuBarIdleTemplate@2x.png; do
+            test -f "build/PinVol.app/Contents/Resources/$f" || { echo "Falta $f en el paquete"; exit 1; }
+          done
+          codesign --verify --verbose build/PinVol.app
+          hdiutil verify dist/PinVol.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PinVol-dmg
+          path: dist/PinVol.dmg
+          if-no-files-found: error
+
+      - name: Capturas de la ventana
+        continue-on-error: true
+        run: ./snapshot.sh build/snapshots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: build/snapshots
+          if-no-files-found: ignore
+
+      - name: Actualizar dist/PinVol.dmg en el repo
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/PinVol.dmg
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore: actualiza dist/PinVol.dmg [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Publicar release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
+          CHANNEL=$(/usr/libexec/PlistBuddy -c "Print :PinVolReleaseChannel" Info.plist 2>/dev/null || true)
+          if gh release view "v$VER" >/dev/null 2>&1; then
+            echo "La release v$VER ya existe"
+          else
+            gh release create "v$VER" dist/PinVol.dmg --title "PinVol $CHANNEL $VER" --generate-notes --target "$GITHUB_SHA"
+          fi
