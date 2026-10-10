@@ -355,4 +355,11 @@ final class Controller {
 
     /// Detiene los motores sin tocar lo guardado: la app se reabre enseguida y no debe haber dos tomas del mismo audio.
     func suspendEngines() { for e in engines.values { e.enabled = false } }
+
+    /// Tras instalar no se pudo abrir la versión nueva: esta sigue en marcha, con los motores como estaban guardados.
+    func relaunchFailed(_ message: String) {
+        for e in engines.values { e.enabled = enabled }
+        update = UpdateState(kind: .failed, message: message)
+        broadcast(full: true)
+    }
 }

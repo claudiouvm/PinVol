@@ -210,14 +210,20 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// La versión nueva ya está en su sitio: se detienen los motores (para no duplicar el audio) y se abre otra instancia de
     /// la app, que ya es la nueva; esta termina. `--updated` hace que arranque sin ventana y avise junto al ícono.
+    /// Si la nueva no se puede abrir, esta sigue en marcha con sus motores: mejor la versión vieja que ninguna.
     private func relaunch() {
         model.suspendEngines()
         let cfg = NSWorkspace.OpenConfiguration()
         cfg.createsNewApplicationInstance = true
         cfg.activates = false
         cfg.arguments = ["--updated"]
-        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: cfg) { _, _ in
-            DispatchQueue.main.async { NSApp.terminate(nil) }
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: cfg) { [weak self] _, error in
+            DispatchQueue.main.async {
+                guard let error else { return NSApp.terminate(nil) }
+                self?.launchLog.error("no se pudo abrir la versión nueva: \(error.localizedDescription, privacy: .public)")
+                self?.model.relaunchFailed(L("Installed · reopen PinVol"))
+                self?.noteInMenuBar(L("Installed · reopen PinVol"))
+            }
         }
     }
 
