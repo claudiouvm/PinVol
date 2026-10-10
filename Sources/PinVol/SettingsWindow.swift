@@ -78,12 +78,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         window.orderFrontRegardless()   // delante de otras ventanas aunque macOS no conceda la activación
     }
 
-    /// Elige la pestaña inicial por nombre (apps, settings, about). Solo desarrollo y capturas.
-    func select(_ name: String) {
+    /// Elige la pestaña por nombre (apps, settings, about). Sin `animated` es la pestaña inicial (y la de las capturas).
+    func select(_ name: String, animated: Bool = false) {
         switch name {
-        case "settings": showTab(.settings, animated: false)
-        case "about": showTab(.about, animated: false)
-        default: showTab(.apps, animated: false)
+        case "settings": showTab(.settings, animated: animated)
+        case "about": showTab(.about, animated: animated)
+        default: showTab(.apps, animated: animated)
         }
     }
 

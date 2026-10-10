@@ -29,6 +29,8 @@ PinVol corre como **dos instancias de la misma app**:
 
 Se comunican con `DistributedNotificationCenter`. La razón es la memoria: abrir una ventana hace que AppKit reserve unos 8 MB para dibujarla, más 5–7 MB por los interruptores y el slider nativos, y el sistema no los devuelve aunque cierres la ventana. Con la ventana en otro proceso, esa memoria se libera al cerrarla. Con la ventana cerrada, el proceso residente ocupa unos 15–20 MB; mientras está abierta, la instancia de interfaz suma unos 22–25 MB más. Estas cifras se midieron con la versión original, de una sola app, y no se han vuelto a medir con cinco apps ni en macOS 26.
 
+La instancia residente abre la ventana lanzando la de interfaz con `--ui` (o, si ya está abierta, mandándole un aviso `show`). Para abrirla en una pestaña concreta —**Acerca de PinVol** en el menú del ícono de la barra abre la pestaña Acerca de— el arranque añade `--tab about` y el aviso lleva un campo `tab` (`openWindow` en `main.swift`, `UIDelegate`).
+
 Todos los controles son nativos de AppKit (`NSSwitch`, `NSSlider`, símbolos SF). Respetan el modo claro y oscuro y, como la app se compila con el SDK de macOS 26, el aspecto actual del sistema.
 
 El código está en `Sources/PinVol/`, repartido por responsabilidad:

@@ -24,14 +24,20 @@ func installMainMenu(quitAction: Selector, quitTitle: String, extra: [NSMenuItem
 final class UIDelegate: NSObject, NSApplicationDelegate {
     private let backend = RemoteBackend()
     private var settings: SettingsWindow?
+    /// Pestaña en que se abre la ventana: la que pidió la residente al lanzar esta instancia (`--ui --tab about`) o, si la
+    /// ventana aún no existe, la de un aviso «show» que llegó antes.
+    private var pendingTab: String? = {
+        let args = CommandLine.arguments
+        return args.firstIndex(of: "--tab").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+    }()
 
     func applicationDidFinishLaunching(_ n: Notification) {
         NSApp.setActivationPolicy(.accessory)
         installMainMenu(quitAction: #selector(quitAll), quitTitle: L("Quit PinVol"))
         // La ventana se abre con el primer estado recibido (o a los 1,5 s si la residente no responde).
         backend.onState = { [weak self] _, _ in self?.open() }
-        backend.onShow = { [weak self] in
-            self?.settings?.show()
+        backend.onShow = { [weak self] tab in
+            self?.show(tab: tab)
             #if SNAPSHOT
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
                 let w = self?.settings?.window
@@ -62,9 +68,20 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
     private func open() {
         guard settings == nil else { return }
         let s = SettingsWindow(backend: backend)
+        if let tab = pendingTab { s.select(tab) }
         s.onClose = { NSApp.terminate(nil) }
         settings = s
         s.show()
+    }
+
+    /// La residente pide traer la ventana al frente, a veces en una pestaña concreta («Acerca de PinVol» del menú).
+    private func show(tab: String?) {
+        guard let settings else {
+            if let tab { pendingTab = tab }   // la ventana aún no existe: se abrirá en esa pestaña
+            return
+        }
+        if let tab { settings.select(tab, animated: true) }
+        settings.show()
     }
 
     func applicationShouldHandleReopen(_ app: NSApplication, hasVisibleWindows: Bool) -> Bool {
