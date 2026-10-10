@@ -57,6 +57,9 @@ for lang in ${=LANGS}; do
   run light-settings   --tab settings
   run light-about      --tab about
   run light-update     --assigned com.apple.Music --level 0.45 --gains $ONE --on --update available --status active
+  run light-update-downloading --assigned com.apple.Music --level 0.45 --gains $ONE --on --update downloading --status active
+  run light-update-ready       --assigned com.apple.Music --level 0.45 --gains $ONE --on --update ready --status active
+  run light-about-update       --tab about --update ready
   run dark-empty       --dark
   run dark-assigned    --dark --assigned com.apple.Music --level 0.45 --gains $ONE --on --status active
   run dark-five        --dark --assigned $APPS --level $LEVELS --gains $FIVE --on --status active

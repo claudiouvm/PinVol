@@ -44,8 +44,10 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `AppsPanel.swift` | Drop zone and app rows |
 | `Style.swift` | Shared labels, cards and settings rows |
 | `Strings.swift` | Interface text (`L("…")`) and language-aware number formats |
-| `Updates.swift` | Latest-release lookup on GitHub |
+| `Updates.swift` | Latest-release lookup on GitHub (version, `.dmg` and its checksum) |
+| `Installer.swift` | Download and install of a new version (resident instance only) |
 | `Snapshot.swift` | Development only: window screenshots |
+| `SelfTest.swift` | Development only: `--selftest-install`, the update installer test the CI runs |
 
 ## Startup at login
 
@@ -73,6 +75,7 @@ The interface is in English and Spanish and follows the Mac's language: Spanish 
 | `tools/make-dmg.sh` | Builds the arm64 app and produces `dist/PinVol.dmg` (fails if the binary is not arm64-only) |
 | `./snapshot.sh` | Builds a development variant and renders PNG screenshots of the window (light/dark, 1 and 5 apps, every tab) in English and Spanish into `build/snapshots/en` and `build/snapshots/es`, with no screen-recording permission needed |
 | `python3 tools/check-strings.py` | Checks that every interface text has its translation (the CI runs it too; it needs no Mac) |
+| `tools/test-install.sh` | Tests the update installer on a real macOS: mounts the freshly built `.dmg` and swaps an older "installed" app for it (needs `tools/make-dmg.sh` and the `-DSNAPSHOT` build first; the CI runs it) |
 | `python3 tools/make-icon.py` | Regenerates `Resources/AppIcon.icns` and the menu bar glyphs (`MenuBar*Template*.png`). Everything is drawn in code |
 
 `snapshot.sh` builds with `-DSNAPSHOT` and uses a different bundle identifier (`com.claudiouvm.pinvol.dev`), so it does not touch the real app's settings or permissions. The options of the development binary are listed at the top of `Snapshot.swift`. The script can be tuned with environment variables:
@@ -88,7 +91,7 @@ All workflows run on the `macos-26` runner (Apple Silicon, Xcode 26) except the 
 
 | Workflow | When | What it does |
 |---|---|---|
-| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/` or `.md` files change) | Checks the translations (`tools/check-strings.py`). Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
+| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/` or `.md` files change) | Checks the translations (`tools/check-strings.py`). Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Tests the update installer (`tools/test-install.sh`). Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
 | `Screenshots` (`screenshots.yml`) | Manual, or in a pull request that changes `snapshot.sh` or the workflow itself | Installs Spotify, IINA and TIDAL, takes the screenshots (English and Spanish) and uploads them as `capturas-portada`. The front-page images are `en/light-five.png` and `en/dark-five.png` from that artifact (`docs/apps-claro.png` and `docs/apps-oscuro.png`, for `README.md`) and `es/light-five.png` and `es/dark-five.png` (`docs/apps-claro.es.png` and `docs/apps-oscuro.es.png`, for `README.es.md`). |
 | `Release notes` (`release-notes.yml`, `ubuntu-latest`) | Manual | Copies `RELEASE_NOTES.md` to the release of the version in `Info.plist`. |
 
@@ -96,7 +99,11 @@ Swift cannot be compiled on Linux, so the CI is the real build. The artifacts ar
 
 ## Updates and releases
 
-PinVol checks the latest GitHub release once a day (and on demand in **About**, or with **Check for updates…** in the menu bar icon's menu) and compares it with its own version. If there is a newer one it shows a banner in the window and a menu item that opens the release page; it never downloads or installs anything. It can be turned off in **Settings**. From the menu bar the resident instance has no window to show the result in, so it appears next to the icon for a few seconds (`noteInMenuBar` in `main.swift`). The check uses GitHub's public API, so the repository must be public.
+PinVol checks the latest GitHub release once a day (and on demand in **About**, or with **Check for updates…** in the menu bar icon's menu) and compares it with its own version. If there is a newer one it shows a banner in the window and a menu item; nothing is downloaded or installed until the user asks (see below). It can be turned off in **Settings**. From the menu bar the resident instance has no window to show the result in, so it appears next to the icon for a few seconds (`noteInMenuBar` in `main.swift`). The check uses GitHub's public API, so the repository must be public.
+
+**In-app install.** **Download** (banner, About or the menu bar icon's menu) downloads the release's `PinVol.dmg` to `~/Library/Caches/com.claudiouvm.pinvol/Updates` and checks it against the SHA-256 that the GitHub API publishes for the asset (`digest`); the item then becomes **Install PinVol X and restart**. Installing (`UpdateInstaller.install`) mounts the image read-only and hidden, checks that the app inside has the same bundle identifier, the expected version (newer than the installed one) and an intact signature, copies it next to the installed one, swaps them with `FileManager.replaceItemAt` and removes the image. Then the resident instance stops its engines, opens a new instance with `--updated` (it starts without the window and shows "Updated to X" next to the icon) and quits. Trust is the same as downloading the `.dmg` by hand: the app is ad-hoc signed, so there is no identity to verify and the checksum only guards against damaged downloads.
+
+If the app's folder is not writable (not in Applications, or running from a disk image) or macOS refuses (Privacy & Security → App Management), the installer fails with `.notWritable` or `.permission` and the disk image is opened so the user can drag the app, as before. Other failures show their reason in About and the state goes back to "available". Updating changes the ad-hoc signature, so macOS may ask for the audio permission again. The steps are logged under the `com.claudiouvm.pinvol` subsystem, category `update`. The CI tests the installer for real (`tools/test-install.sh` runs `--selftest-install` of the `-DSNAPSHOT` binary against the `.dmg` it just built), so keep `SelfTest.swift` in step with `Installer.swift`.
 
 To publish a version: raise `CFBundleShortVersionString` (and `CFBundleVersion`) in `Info.plist`, update `RELEASE_NOTES.md` (English first, then Spanish; CI requires its first line to name the version) and merge to `main`. The `Release` workflow then builds the arm64 `.dmg`, commits it to `dist/PinVol.dmg` and creates the release `v<version>` with those notes if it does not exist yet. If you only change the notes, run the manual `Release notes` workflow to copy them to the existing release.
 
@@ -119,4 +126,5 @@ To label a version as beta, add `PinVolReleaseChannel` = `Beta` to `Info.plist` 
 - On outputs without software volume control (some HDMI or USB devices) there is nothing to compensate and the app says so.
 - Apps with DRM or protected processes may not be capturable.
 - The `.dmg` is not notarized (that would need an Apple developer account).
-- Because it is ad-hoc signed, every rebuild changes the signature and macOS may ask for the audio permission again.
+- Because it is ad-hoc signed, every rebuild or update changes the signature and macOS may ask for the audio permission again.
+- The in-app install needs a writable folder and, on some Macs, the App Management permission; the first version with it (1.6) has to be installed by hand.

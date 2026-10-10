@@ -33,7 +33,8 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         model.onStatus = { [weak self] in self?.statusChanged() }
         model.onPresence = { [weak self] in self?.applyPresence() }
         model.onShow = { [weak self] in self?.showWindow() }
-        model.onUpdateChecked = { [weak self] in self?.showUpdateResult($0) }
+        model.onUpdateNote = { [weak self] in self?.showUpdateResult($0) }
+        model.onInstalled = { [weak self] in self?.relaunch() }
         model.start()
         applyPresence()
         #if SNAPSHOT
@@ -44,10 +45,12 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Al encender el Mac y abrirse sola (con «Abrir al iniciar sesión»), si ya hay apps fijadas pasa directo a la barra de
         // menús: la ventana solo estorba. Si el usuario abre la app, o mientras no haya nada fijado, se muestra como siempre.
         markedAsLoginItem = markedAsLoginItem || openedAsLoginItem()
-        let bySession = !markedAsLoginItem && startedWithSession()
-        quietStart = (markedAsLoginItem || bySession) && model.isConfigured
-        launchLog.notice("inicio: evento=\(self.markedAsLoginItem, privacy: .public) sesión=\(bySession, privacy: .public) fijadas=\(self.model.apps.count, privacy: .public) → \(self.quietStart ? "barra de menús" : "ventana", privacy: .public)")
+        let afterUpdate = CommandLine.arguments.contains("--updated")   // la abre la versión anterior tras instalar la nueva
+        let bySession = !markedAsLoginItem && !afterUpdate && startedWithSession()
+        quietStart = (markedAsLoginItem || bySession || afterUpdate) && model.isConfigured
+        launchLog.notice("inicio: evento=\(self.markedAsLoginItem, privacy: .public) sesión=\(bySession, privacy: .public) actualizada=\(afterUpdate, privacy: .public) fijadas=\(self.model.apps.count, privacy: .public) → \(self.quietStart ? "barra de menús" : "ventana", privacy: .public)")
         if !quietStart { DispatchQueue.main.async { self.showWindow() } }
+        if afterUpdate { noteInMenuBar(L("Updated to %@", UpdateChecker.currentVersion)) }
     }
 
     /// Respaldo para cuando macOS no marca el evento de apertura (no siempre lo hace con los elementos de inicio de sesión):
@@ -154,13 +157,21 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         toggle.target = self
         toggle.state = model.enabled ? .on : .off
         menu.addItem(toggle)
+        let latest = model.update.latest ?? ""
         switch model.update.kind {
         case .available:
-            if let v = model.update.latest {
-                let update = NSMenuItem(title: L("Download PinVol %@…", v), action: #selector(openUpdate), keyEquivalent: "")
-                update.target = self
-                menu.addItem(update)
-            }
+            let item = NSMenuItem(title: L("Download PinVol %@…", latest), action: #selector(downloadUpdate), keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        case .downloading:
+            let percent = percentText(Float(model.update.progress ?? 0))
+            menu.addItem(NSMenuItem(title: L("Downloading PinVol %@… %@", latest, percent), action: nil, keyEquivalent: ""))
+        case .ready:
+            let item = NSMenuItem(title: L("Install PinVol %@ and restart", latest), action: #selector(installUpdate), keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        case .installing:
+            menu.addItem(NSMenuItem(title: L("Installing…"), action: nil, keyEquivalent: ""))
         case .checking:
             if forMenuBar { menu.addItem(NSMenuItem(title: L("Checking…"), action: nil, keyEquivalent: "")) }
         default:
@@ -190,8 +201,24 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleEnabled() { model.setEnabled(!model.enabled) }
 
-    @objc private func openUpdate() {
-        if let s = model.update.url, let url = URL(string: s) { NSWorkspace.shared.open(url) }
+    @objc private func downloadUpdate() {
+        model.downloadUpdate()
+        noteInMenuBar(L("Downloading… %@", percentText(0)))
+    }
+
+    @objc private func installUpdate() { model.installUpdate() }
+
+    /// La versión nueva ya está en su sitio: se detienen los motores (para no duplicar el audio) y se abre otra instancia de
+    /// la app, que ya es la nueva; esta termina. `--updated` hace que arranque sin ventana y avise junto al ícono.
+    private func relaunch() {
+        model.suspendEngines()
+        let cfg = NSWorkspace.OpenConfiguration()
+        cfg.createsNewApplicationInstance = true
+        cfg.activates = false
+        cfg.arguments = ["--updated"]
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: cfg) { _, _ in
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
     }
 
     /// Esta instancia no abre ventanas (ver Model.swift), así que el resultado se avisa junto al ícono de la barra de menús.
@@ -201,8 +228,10 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func showUpdateResult(_ u: UpdateState) {
+        let latest = u.latest ?? ""
         switch u.kind {
-        case .available: noteInMenuBar(L("New version %@", u.latest ?? ""))
+        case .available: noteInMenuBar(u.message == nil ? L("New version %@", latest) : L("Couldn't download"))
+        case .ready: noteInMenuBar(u.message == nil ? L("Ready to install · %@", latest) : L("Couldn't install"))
         case .upToDate: noteInMenuBar(L("Up to date · %@", UpdateChecker.currentVersion))
         case .failed: noteInMenuBar(L("Couldn't check"))
         default: break
@@ -266,6 +295,12 @@ private func makeDelegate() -> NSApplicationDelegate {
     #endif
     return CommandLine.arguments.contains("--ui") ? UIDelegate() : ResidentDelegate()
 }
+
+#if SNAPSHOT
+if let i = CommandLine.arguments.firstIndex(of: "--selftest-install") {
+    runInstallSelfTest(Array(CommandLine.arguments[(i + 1)...]))   // prueba del instalador en el CI: no abre ninguna ventana
+}
+#endif
 
 let app = NSApplication.shared
 let delegate = makeDelegate()

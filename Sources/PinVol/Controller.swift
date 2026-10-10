@@ -17,11 +17,15 @@ final class Controller {
     private var updateTimer: Timer?
     private var broadcastPending = false
     private var broadcastFull = false
+    private var downloadedDMG: URL?
     var onStatus: (() -> Void)?
     var onPresence: (() -> Void)?
     var onShow: (() -> Void)?
-    /// Se llama al terminar una búsqueda de actualizaciones pedida por el usuario (no las diarias), con su resultado.
-    var onUpdateChecked: ((UpdateState) -> Void)?
+    /// Se llama con el estado de la actualización cuando el usuario espera un resultado: al terminar una búsqueda que pidió
+    /// (no las diarias), al terminar de descargar y cuando falla una descarga o una instalación.
+    var onUpdateNote: ((UpdateState) -> Void)?
+    /// Se llama cuando la versión nueva ya está en su sitio: la app debe reabrirse.
+    var onInstalled: (() -> Void)?
 
     var state: AppState {
         var s = AppState()
@@ -116,6 +120,8 @@ final class Controller {
         case "menubar": if let v = m["value"] as? Bool { setShowMenuBar(v) }
         case "updates": if let v = m["value"] as? Bool { setCheckUpdates(v) }
         case "checkUpdates": checkForUpdates(manual: true)
+        case "downloadUpdate": downloadUpdate()
+        case "installUpdate": installUpdate()
         case "show": onShow?()
         case "quit": NSApp.terminate(nil)
         default: break
@@ -232,7 +238,7 @@ final class Controller {
 
     /// `manual`: la pidió el usuario, así que los fallos se muestran; las automáticas fallan en silencio.
     func checkForUpdates(manual: Bool) {
-        guard update.kind != .checking else { return }
+        guard ![.checking, .downloading, .ready, .installing].contains(update.kind) else { return }
         let previous = update
         update = UpdateState(kind: .checking)
         broadcast(full: true)
@@ -256,6 +262,97 @@ final class Controller {
             update = manual ? UpdateState(kind: .failed, message: e.message) : previous
         }
         broadcast(full: true)
-        if manual { onUpdateChecked?(update) }
+        if manual { onUpdateNote?(update) }
     }
+
+    // MARK: Descargar e instalar (solo cuando el usuario lo pide)
+
+    /// «Descargar»: baja el .dmg de la release. Vuelve a pedir la release para tener su dirección y su huella al día.
+    func downloadUpdate() {
+        guard update.kind == .available, let latest = update.latest else { return }
+        let page = update.url
+        update = UpdateState(kind: .downloading, latest: latest, url: page, progress: 0)
+        broadcast(full: true)
+        UpdateChecker.fetchLatest { [weak self] result in
+            DispatchQueue.main.async { self?.startDownload(result, latest: latest, page: page) }
+        }
+    }
+
+    private func startDownload(_ result: Result<ReleaseInfo, UpdateError>, latest: String, page: String?) {
+        switch result {
+        case .failure(let e):
+            downloadFailed(.download(e.message), latest: latest, page: page)
+        case .success(let r) where !UpdateChecker.isNewer(r.version, than: UpdateChecker.currentVersion):
+            update = UpdateState(kind: .upToDate, latest: r.version)
+            broadcast(full: true)
+        case .success(let r):
+            guard let asset = r.assetURL else { return downloadFailed(.noAsset, latest: r.version, page: r.pageURL) }
+            update = UpdateState(kind: .downloading, latest: r.version, url: r.pageURL, progress: 0)
+            let file = UpdateInstaller.cacheDirectory.appendingPathComponent("PinVol-\(r.version).dmg")
+            UpdateInstaller.download(asset, to: file, sha256: r.sha256, progress: { [weak self] p in
+                guard let self, self.update.kind == .downloading else { return }
+                self.update.progress = p
+                self.broadcast(full: true)
+            }, completion: { [weak self] outcome in
+                self?.finishDownload(outcome, version: r.version, page: r.pageURL)
+            })
+        }
+    }
+
+    private func finishDownload(_ outcome: Result<URL, InstallError>, version: String, page: String) {
+        switch outcome {
+        case .success(let file):
+            downloadedDMG = file
+            update = UpdateState(kind: .ready, latest: version, url: page)
+            broadcast(full: true)
+            onUpdateNote?(update)
+        case .failure(let e):
+            downloadFailed(e, latest: version, page: page)
+        }
+    }
+
+    /// Un fallo al descargar deja la versión nueva como disponible, con el motivo, para poder reintentar.
+    private func downloadFailed(_ e: InstallError, latest: String, page: String?) {
+        update = UpdateState(kind: .available, latest: latest, url: page, message: e.message)
+        broadcast(full: true)
+        onUpdateNote?(update)
+    }
+
+    /// «Instalar»: cambia la app instalada por la del .dmg descargado y, si sale bien, avisa para que se reabra (`onInstalled`).
+    func installUpdate() {
+        guard update.kind == .ready, let dmg = downloadedDMG, let version = update.latest else { return }
+        let page = update.url
+        update = UpdateState(kind: .installing, latest: version, url: page)
+        broadcast(full: true)
+        let target = Bundle.main.bundleURL
+        let bundleID = Bundle.main.bundleIdentifier ?? ""
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let failure: InstallError?
+            do {
+                try UpdateInstaller.install(dmg: dmg, into: target, bundleID: bundleID, version: version,
+                                            currentVersion: UpdateChecker.currentVersion)
+                failure = nil
+            } catch {
+                failure = error as? InstallError ?? .failed(error.localizedDescription)
+            }
+            DispatchQueue.main.async { self?.finishInstall(failure, dmg: dmg, version: version, page: page) }
+        }
+    }
+
+    private func finishInstall(_ failure: InstallError?, dmg: URL, version: String, page: String?) {
+        guard let e = failure else { onInstalled?(); return }
+        if e.opensDiskImage {
+            NSWorkspace.shared.open(dmg)   // Finder monta la imagen para instalar arrastrando la app a Aplicaciones
+            update = UpdateState(kind: .ready, latest: version, url: page, message: e.message)
+        } else {
+            try? FileManager.default.removeItem(at: dmg)
+            downloadedDMG = nil
+            update = UpdateState(kind: .available, latest: version, url: page, message: e.message)
+        }
+        broadcast(full: true)
+        onUpdateNote?(update)
+    }
+
+    /// Detiene los motores sin tocar lo guardado: la app se reabre enseguida y no debe haber dos tomas del mismo audio.
+    func suspendEngines() { for e in engines.values { e.enabled = false } }
 }

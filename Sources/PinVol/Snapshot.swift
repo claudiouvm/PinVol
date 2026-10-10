@@ -11,7 +11,7 @@ func devLog(_ s: String) {
 
 // MARK: - Solo desarrollo: renderiza la ventana a un PNG
 // `--snapshot out.png [--dark] [--tab apps|settings|about] [--assigned id1,id2,…] [--level x1,x2,…] [--on]
-//                     [--status kind [--text t]] [--gains dB1,dB2,…] [--update available|uptodate|failed] [--force]`
+//                     [--status kind [--text t]] [--gains dB1,dB2,…] [--update available|downloading|ready|uptodate|failed] [--force]`
 // Con `--status active`, `--gains` pone en cada app la ganancia que mostraría («Active · +11.9 dB»). Con `waiting` y `error`,
 // sin `--text`, salen los textos reales del motor. El idioma se elige como en cualquier app: `-AppleLanguages "(es)"`.
 // Si algún ícono de app aún no está generado sale con código 3 sin escribir nada; `--force` captura igual.
@@ -28,6 +28,8 @@ final class StaticBackend: Backend {
     func setShowMenuBar(_ on: Bool) {}
     func setCheckUpdates(_ on: Bool) {}
     func checkForUpdates() {}
+    func downloadUpdate() {}
+    func installUpdate() {}
     func quit() {}
 }
 
@@ -100,6 +102,8 @@ final class SnapshotDelegate: NSObject, NSApplicationDelegate {
         st.enabled = args.contains("--on")
         switch opt("--update") {
         case "available": st.update = UpdateState(kind: .available, latest: "9.9.9", url: "https://example.com")
+        case "downloading": st.update = UpdateState(kind: .downloading, latest: "9.9.9", url: "https://example.com", progress: 0.45)
+        case "ready": st.update = UpdateState(kind: .ready, latest: "9.9.9", url: "https://example.com")
         case "uptodate": st.update = UpdateState(kind: .upToDate, latest: UpdateChecker.currentVersion)
         case "failed": st.update = UpdateState(kind: .failed, message: UpdateError.rateLimited.message)
         default: break

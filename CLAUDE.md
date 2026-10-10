@@ -12,6 +12,8 @@
 - **Idiomas de la app**: inglés (base y por defecto) y español (si el Mac está en español). Todo texto visible va con
   `L("English text")` y su traducción en `Resources/es.lproj/Localizable.strings`; `tools/check-strings.py` (CI) lo exige.
   Las capturas de la portada salen en ambos idiomas: `README.md` usa las de `en/` y `README.es.md` las de `es/`.
+- **Actualizaciones desde la app** (`Installer.swift`): solo descargan e instalan cuando el usuario lo pide. El CI prueba el instalador
+  de verdad (`tools/test-install.sh`, `--selftest-install` en `SelfTest.swift`); si cambias el flujo, actualiza esa prueba.
 - **Solo Apple Silicon (arm64)** y **macOS 26 (Tahoe) o posterior**. No se genera binario x86_64; `build.sh` y `tools/make-dmg.sh` lo exigen.
 - **Licencia**: MIT (`LICENSE`, © Claudiouvm); el botón «license» de los README la nombra.
 - La app no se notariza (decisión del dueño): va firmada ad-hoc.
