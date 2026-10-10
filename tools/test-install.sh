@@ -23,7 +23,13 @@ ditto "$APP" "$T/Applications/PinVol.app"
 $PB -c "Set :CFBundleShortVersionString 0.0.1" "$T/Applications/PinVol.app/Contents/Info.plist"
 codesign --force --sign - "$T/Applications/PinVol.app" >/dev/null 2>&1
 
-"$BIN" --selftest-install "$DMG" "$T/Applications/PinVol.app" "$ID" "$VER" "0.0.1"
+if ! "$BIN" --selftest-install "$DMG" "$T/Applications/PinVol.app" "$ID" "$VER" "0.0.1"; then
+  echo "--- estado tras la prueba ---" >&2
+  ls -la "$T/Applications" >&2 || true
+  $PB -c "Print :CFBundleShortVersionString" "$T/Applications/PinVol.app/Contents/Info.plist" >&2 || true
+  hdiutil info >&2 || true
+  exit 1
+fi
 
 NEW=$($PB -c "Print :CFBundleShortVersionString" "$T/Applications/PinVol.app/Contents/Info.plist")
 [[ "$NEW" == "$VER" ]] || { echo "La app instalada es la $NEW y debería ser la $VER" >&2; exit 1; }

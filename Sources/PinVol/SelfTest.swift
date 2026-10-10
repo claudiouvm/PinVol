@@ -23,7 +23,12 @@ func runInstallSelfTest(_ args: [String]) -> Never {
         print("\(ok ? "ok   " : "FALLA") \(name)\(detail.isEmpty ? "" : " — \(detail)")")
         if !ok { failures += 1 }
     }
-    func installedVersion() -> String? { Bundle(url: target)?.infoDictionary?["CFBundleShortVersionString"] as? String }
+    // Se lee el Info.plist del disco: `Bundle` guarda en memoria el de la primera lectura y no vería el cambio.
+    func installedVersion() -> String? {
+        guard let data = try? Data(contentsOf: target.appendingPathComponent("Contents/Info.plist")),
+              let info = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else { return nil }
+        return info["CFBundleShortVersionString"] as? String
+    }
     func wait(_ done: () -> Bool) {
         let limit = Date(timeIntervalSinceNow: 60)
         while !done() && Date() < limit { RunLoop.main.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05)) }
