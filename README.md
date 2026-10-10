@@ -52,7 +52,7 @@
 | **Menu bar and Dock** | Open it from either one. Set to open at login, it goes straight to the menu bar, without the window, once you have apps pinned. |
 | **Light and dark** | Native controls that follow your appearance. |
 | **English and Spanish** | The interface follows your Mac's language: Spanish if your Mac is set to Spanish, English otherwise. |
-| **Update check** | Tells you when a new version is out. It never installs anything by itself. |
+| **Update check** | Tells you when a new version is out, and you can check any time from the menu bar icon. It never installs anything by itself. |
 
 ## Install
 

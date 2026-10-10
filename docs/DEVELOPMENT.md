@@ -96,7 +96,7 @@ Swift cannot be compiled on Linux, so the CI is the real build. The artifacts ar
 
 ## Updates and releases
 
-PinVol checks the latest GitHub release once a day (and on demand in **About**) and compares it with its own version. If there is a newer one it shows a banner in the window and a menu item that opens the release page; it never downloads or installs anything. It can be turned off in **Settings**. The check uses GitHub's public API, so the repository must be public.
+PinVol checks the latest GitHub release once a day (and on demand in **About**, or with **Check for updates…** in the menu bar icon's menu) and compares it with its own version. If there is a newer one it shows a banner in the window and a menu item that opens the release page; it never downloads or installs anything. It can be turned off in **Settings**. From the menu bar the resident instance has no window to show the result in, so it appears next to the icon for a few seconds (`noteInMenuBar` in `main.swift`). The check uses GitHub's public API, so the repository must be public.
 
 To publish a version: raise `CFBundleShortVersionString` (and `CFBundleVersion`) in `Info.plist`, update `RELEASE_NOTES.md` (English first, then Spanish; CI requires its first line to name the version) and merge to `main`. The `Release` workflow then builds the arm64 `.dmg`, commits it to `dist/PinVol.dmg` and creates the release `v<version>` with those notes if it does not exist yet. If you only change the notes, run the manual `Release notes` workflow to copy them to the existing release.
 

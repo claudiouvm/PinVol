@@ -52,7 +52,7 @@
 | **Barra de menús y Dock** | Ábrela desde cualquiera de los dos. Si la abres al iniciar sesión, pasa directo a la barra de menús, sin la ventana, cuando ya tienes apps fijadas. |
 | **Claro y oscuro** | Controles nativos que siguen tu apariencia. |
 | **Español e inglés** | La interfaz sigue el idioma de tu Mac: en español si tu Mac está en español, y en inglés en cualquier otro caso. |
-| **Búsqueda de actualizaciones** | Te avisa cuando sale una versión nueva. Nunca instala nada por su cuenta. |
+| **Búsqueda de actualizaciones** | Te avisa cuando sale una versión nueva, y puedes buscarla cuando quieras desde el ícono de la barra de menús. Nunca instala nada por su cuenta. |
 
 ## Instalación
 
