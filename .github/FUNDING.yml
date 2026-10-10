@@ -1,0 +1,4 @@
+# Botón «Sponsor» de GitHub: sale arriba del repositorio y en «Sponsor this project», en la columna About.
+# Es el mismo enlace de donaciones de PayPal que el botón «¡Invítame un café!» de Acerca de en la app
+# (`donateURL` en Sources/PinVol/SettingsWindow.swift): si cambia uno, cambia el otro.
+custom: ["https://www.paypal.com/donate/?business=8Z649D8XXB46J&no_recurring=0&item_name=If+you+would+like+to+buy+me+a+coffee%2C+I+will+be+more+than+happy.+Really%2C+I+drink+a+lot+of+coffee%21&currency_code=USD"]

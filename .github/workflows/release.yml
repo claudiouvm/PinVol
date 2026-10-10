@@ -8,9 +8,9 @@ name: Release
 on:
   push:
     branches: [main]
-    paths-ignore: ['dist/**', 'docs/**', '**/*.md']
+    paths-ignore: ['dist/**', 'docs/**', '**/*.md', '.github/FUNDING.yml']
   pull_request:
-    paths-ignore: ['dist/**', 'docs/**', '**/*.md']
+    paths-ignore: ['dist/**', 'docs/**', '**/*.md', '.github/FUNDING.yml']
   workflow_dispatch:
 
 concurrency:
