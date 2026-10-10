@@ -187,7 +187,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         updateBanner.image = symbol("arrow.down.circle.fill", size: 12)
         updateBanner.imagePosition = .imageLeading
         updateBanner.target = self
-        updateBanner.action = #selector(openUpdate)
+        updateBanner.action = #selector(updateAction)
         updateBanner.isHidden = true
 
         // Pestañas
@@ -289,7 +289,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         updateButton.bezelStyle = .rounded
         updateButton.controlSize = .small
         updateButton.target = self
-        updateButton.action = #selector(updateButtonTapped)
+        updateButton.action = #selector(updateAction)
         updateDetail.lineBreakMode = .byTruncatingTail
         let updateCard = Card(rows: [formRow(L("Updates"), detailLabel: updateDetail, control: updateButton)])
 
@@ -373,7 +373,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     private func applyUpdate(_ u: UpdateState) {
         let current = UpdateChecker.currentVersion
+        let latest = u.latest ?? ""
+        let percent = percentText(Float(u.progress ?? 0))
         var color = NSColor.secondaryLabelColor
+        var enabled = true
         switch u.kind {
         case .idle:
             updateDetail.stringValue = L("Version %@", current)
@@ -381,40 +384,62 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         case .checking:
             updateDetail.stringValue = L("Checking…")
             updateButton.title = L("Check")
+            enabled = false
         case .upToDate:
             updateDetail.stringValue = L("Up to date · %@", current)
             updateButton.title = L("Check")
-        case .available:
-            updateDetail.stringValue = L("New version %@", u.latest ?? "")
+        case .available:   // tras una descarga fallida, el motivo ocupa el sitio de la versión
+            updateDetail.stringValue = u.message ?? L("New version %@", latest)
             updateButton.title = L("Download")
+            if u.message != nil { color = .systemOrange }
+        case .downloading:
+            updateDetail.stringValue = L("Downloading… %@", percent)
+            updateButton.title = L("Download")
+            enabled = false
+        case .ready:
+            updateDetail.stringValue = u.message ?? L("Ready to install · %@", latest)
+            updateButton.title = L("Install")
+            if u.message != nil { color = .systemOrange }
+        case .installing:
+            updateDetail.stringValue = L("Installing…")
+            updateButton.title = L("Install")
+            enabled = false
         case .failed:
             updateDetail.stringValue = u.message ?? L("Couldn't check")
             updateButton.title = L("Retry")
             color = .systemOrange
         }
-        updateButton.isEnabled = u.kind != .checking
+        updateButton.isEnabled = enabled
         updateDetail.textColor = color
         updateDetail.toolTip = updateDetail.stringValue
-        updateBanner.title = L("Version %@ available · Download", u.latest ?? "")
+
+        switch u.kind {
+        case .available: updateBanner.title = L("Version %@ available · Download", latest)
+        case .downloading: updateBanner.title = L("Downloading… %@", percent)
+        case .ready: updateBanner.title = L("Version %@ ready · Install and restart", latest)
+        case .installing: updateBanner.title = L("Installing…")
+        default: break
+        }
+        updateBanner.isEnabled = u.kind == .available || u.kind == .ready
         refreshBanner()
     }
 
+    private static let bannerKinds: Set<UpdateState.Kind> = [.available, .downloading, .ready, .installing]
+
     /// El aviso se muestra en todas las pestañas salvo «Acerca de», que ya tiene su propia fila de actualizaciones.
     private func refreshBanner() {
-        updateBanner.isHidden = backend.state.update.kind != .available || tab == .about
+        updateBanner.isHidden = !Self.bannerKinds.contains(backend.state.update.kind) || tab == .about
     }
 
-    @objc private func openUpdate() {
-        if let s = backend.state.update.url, let url = URL(string: s) { NSWorkspace.shared.open(url) }
-    }
-
-    @objc private func updateButtonTapped() {
-        if backend.state.update.kind == .available {
-            openUpdate()
-        } else {
-            backend.checkForUpdates()
-            applyUpdate(backend.state.update)
+    /// Lo que piden el botón de Acerca de y el aviso de arriba según el estado: descargar, instalar o buscar.
+    @objc private func updateAction() {
+        switch backend.state.update.kind {
+        case .available: backend.downloadUpdate()
+        case .ready: backend.installUpdate()
+        case .checking, .downloading, .installing: break
+        default: backend.checkForUpdates()
         }
+        applyUpdate(backend.state.update)
     }
 
     @objc private func openGitHub() { NSWorkspace.shared.open(UpdateChecker.repoURL) }

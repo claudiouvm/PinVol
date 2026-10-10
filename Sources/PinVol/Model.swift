@@ -35,18 +35,23 @@ struct PinnedApp {
     }
 }
 
+/// Estado de la búsqueda de versión nueva y de su descarga e instalación (las dos últimas, solo si el usuario las pide):
+/// idle → checking → upToDate | available → downloading → ready → installing (y la app se reabre ya actualizada).
+/// Un fallo al descargar vuelve a `available` y uno al instalar a `ready`, con el motivo en `message`.
 struct UpdateState {
-    enum Kind: String { case idle, checking, upToDate, available, failed }
+    enum Kind: String { case idle, checking, upToDate, available, downloading, ready, installing, failed }
     var kind: Kind = .idle
     var latest: String?
-    var url: String?
+    var url: String?          // página de la release
     var message: String?
+    var progress: Double?     // 0...1 mientras se descarga
 
-    init(kind: Kind = .idle, latest: String? = nil, url: String? = nil, message: String? = nil) {
+    init(kind: Kind = .idle, latest: String? = nil, url: String? = nil, message: String? = nil, progress: Double? = nil) {
         self.kind = kind
         self.latest = latest
         self.url = url
         self.message = message
+        self.progress = progress
     }
 
     init(_ d: [String: Any]) {
@@ -54,6 +59,7 @@ struct UpdateState {
         latest = d["latest"] as? String
         url = d["url"] as? String
         message = d["message"] as? String
+        progress = d["progress"] as? Double
     }
 
     var dictionary: [String: Any] {
@@ -61,6 +67,7 @@ struct UpdateState {
         if let latest { d["latest"] = latest }
         if let url { d["url"] = url }
         if let message { d["message"] = message }
+        if let progress { d["progress"] = progress }
         return d
     }
 }
@@ -145,6 +152,8 @@ protocol Backend: AnyObject {
     func setShowMenuBar(_ on: Bool)
     func setCheckUpdates(_ on: Bool)
     func checkForUpdates()
+    func downloadUpdate()
+    func installUpdate()
     func quit()
 }
 
@@ -194,6 +203,14 @@ final class RemoteBackend: Backend {
     func checkForUpdates() {
         state.update = UpdateState(kind: .checking)
         IPC.post(IPC.toResident, ["op": "checkUpdates"])
+    }
+    func downloadUpdate() {
+        state.update = UpdateState(kind: .downloading, latest: state.update.latest, url: state.update.url, progress: 0)
+        IPC.post(IPC.toResident, ["op": "downloadUpdate"])
+    }
+    func installUpdate() {
+        state.update = UpdateState(kind: .installing, latest: state.update.latest, url: state.update.url)
+        IPC.post(IPC.toResident, ["op": "installUpdate"])
     }
     func quit() { IPC.post(IPC.toResident, ["op": "quit"]) }
 }

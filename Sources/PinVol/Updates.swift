@@ -3,12 +3,14 @@ import Foundation
 // MARK: - Comprobación de versión
 //
 // Consulta la última release publicada en GitHub (`releases/latest`) y la compara con la versión instalada.
-// No descarga ni instala nada: si hay una versión nueva, abre la página de la release.
+// Aquí solo se averigua qué hay y dónde está el .dmg; descargarlo e instalarlo, cuando el usuario lo pide, es de Installer.swift.
 // Nota: la API pública de GitHub solo responde si el repositorio es público.
 
 struct ReleaseInfo {
     let version: String    // sin la «v» inicial
     let pageURL: String
+    let assetURL: URL?     // el PinVol.dmg adjunto a la release
+    let sha256: String?    // su huella SHA-256 en minúsculas, si la API de GitHub la da
 }
 
 enum UpdateError: Error {
@@ -70,10 +72,20 @@ enum UpdateChecker {
             }
             guard let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let tag = json["tag_name"] as? String else { return completion(.failure(.badResponse)) }
-            let version = tag.hasPrefix("v") || tag.hasPrefix("V") ? String(tag.dropFirst()) : tag
-            let page = json["html_url"] as? String ?? repoURL.appendingPathComponent("releases").absoluteString
-            completion(.success(ReleaseInfo(version: version, pageURL: page)))
+                  let release = parseRelease(json) else { return completion(.failure(.badResponse)) }
+            completion(.success(release))
         }.resume()
+    }
+
+    /// Lee la respuesta de `releases/latest`: versión, página y el PinVol.dmg adjunto con su huella.
+    static func parseRelease(_ json: [String: Any]) -> ReleaseInfo? {
+        guard let tag = json["tag_name"] as? String else { return nil }
+        let version = tag.hasPrefix("v") || tag.hasPrefix("V") ? String(tag.dropFirst()) : tag
+        let page = json["html_url"] as? String ?? repoURL.appendingPathComponent("releases").absoluteString
+        let dmg = (json["assets"] as? [[String: Any]])?.first { $0["name"] as? String == "PinVol.dmg" }
+        let asset = (dmg?["browser_download_url"] as? String).flatMap { URL(string: $0) }
+        var sha: String?
+        if let digest = dmg?["digest"] as? String, digest.hasPrefix("sha256:") { sha = String(digest.dropFirst(7)).lowercased() }
+        return ReleaseInfo(version: version, pageURL: page, assetURL: asset, sha256: sha)
     }
 }

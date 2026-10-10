@@ -59,6 +59,11 @@ jobs:
           test "$(lipo -archs build/PinVol.app/Contents/MacOS/PinVol)" = "arm64" || { echo "El binario debe ser solo arm64"; exit 1; }
           hdiutil verify dist/PinVol.dmg
 
+      # El instalador de actualizaciones se prueba aquí, en un macOS de verdad: monta el .dmg recién generado y cambia una app
+      # «instalada» más vieja por la que trae (ver tools/test-install.sh y Sources/PinVol/SelfTest.swift).
+      - name: Probar la instalación de una actualización
+        run: tools/test-install.sh
+
       - uses: actions/upload-artifact@v4
         with:
           name: PinVol-dmg

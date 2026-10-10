@@ -44,8 +44,10 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 | `AppsPanel.swift` | Zona de arrastre y filas de apps |
 | `Style.swift` | Etiquetas, tarjetas y filas de ajustes compartidas |
 | `Strings.swift` | Textos de la interfaz (`L("…")`) y formatos de números según el idioma |
-| `Updates.swift` | Consulta de la última release en GitHub |
+| `Updates.swift` | Consulta de la última release en GitHub (versión, `.dmg` y su huella) |
+| `Installer.swift` | Descarga e instalación de una versión nueva (solo la instancia residente) |
 | `Snapshot.swift` | Solo desarrollo: capturas de la ventana |
+| `SelfTest.swift` | Solo desarrollo: `--selftest-install`, la prueba del instalador de actualizaciones que ejecuta el CI |
 
 ## Inicio al encender el Mac
 
@@ -73,6 +75,7 @@ La interfaz está en inglés y en español y sigue el idioma del Mac: en españo
 | `tools/make-dmg.sh` | Compila la app arm64 y genera `dist/PinVol.dmg` (falla si el binario no es solo arm64) |
 | `./snapshot.sh` | Compila una variante de desarrollo y genera capturas PNG de la ventana (claro/oscuro, 1 y 5 apps, cada pestaña) en inglés y en español, en `build/snapshots/en` y `build/snapshots/es`, sin necesitar permiso de grabación de pantalla |
 | `python3 tools/check-strings.py` | Comprueba que cada texto de la interfaz tenga su traducción (el CI también lo ejecuta; no necesita un Mac) |
+| `tools/test-install.sh` | Prueba el instalador de actualizaciones en un macOS de verdad: monta el `.dmg` recién generado y cambia por él una app «instalada» más vieja (hay que ejecutar antes `tools/make-dmg.sh` y la compilación `-DSNAPSHOT`; el CI lo ejecuta) |
 | `python3 tools/make-icon.py` | Regenera `Resources/AppIcon.icns` y los glifos de la barra de menús (`MenuBar*Template*.png`). Todo está dibujado en código |
 
 `snapshot.sh` compila con `-DSNAPSHOT` y usa otro identificador (`com.claudiouvm.pinvol.dev`), así que no toca los ajustes ni los permisos de la app real. Las opciones del binario de desarrollo están listadas al principio de `Snapshot.swift`. El script se ajusta con variables de entorno:
@@ -88,7 +91,7 @@ Todos los workflows corren en el runner `macos-26` (Apple Silicon, Xcode 26) sal
 
 | Workflow | Cuándo | Qué hace |
 |---|---|---|
-| `Release` (`release.yml`) | Pull requests y pushes a `main` (se omite si solo cambian `dist/`, `docs/` o archivos `.md`) | Comprueba las traducciones (`tools/check-strings.py`). Compila también la variante de capturas, para comprobar el código de `-DSNAPSHOT`. Genera el `.dmg` arm64 y comprueba `Info.plist`, el ícono, los recursos del paquete, que el binario sea solo arm64 y que `RELEASE_NOTES.md` nombre la versión. Sube los artefactos `PinVol-dmg` y `capturas`. En `main` además commitea `dist/PinVol.dmg` (un commit del bot marcado `[skip ci]`) y crea la release `v<versión>` si todavía no existe. |
+| `Release` (`release.yml`) | Pull requests y pushes a `main` (se omite si solo cambian `dist/`, `docs/` o archivos `.md`) | Comprueba las traducciones (`tools/check-strings.py`). Compila también la variante de capturas, para comprobar el código de `-DSNAPSHOT`. Genera el `.dmg` arm64 y comprueba `Info.plist`, el ícono, los recursos del paquete, que el binario sea solo arm64 y que `RELEASE_NOTES.md` nombre la versión. Prueba el instalador de actualizaciones (`tools/test-install.sh`). Sube los artefactos `PinVol-dmg` y `capturas`. En `main` además commitea `dist/PinVol.dmg` (un commit del bot marcado `[skip ci]`) y crea la release `v<versión>` si todavía no existe. |
 | `Screenshots` (`screenshots.yml`) | A mano, o en un pull request que cambie `snapshot.sh` o el propio workflow | Instala Spotify, IINA y TIDAL, toma las capturas (en inglés y en español) y las sube como `capturas-portada`. Las imágenes de la portada son `en/light-five.png` y `en/dark-five.png` de ese artefacto (`docs/apps-claro.png` y `docs/apps-oscuro.png`, para `README.md`) y `es/light-five.png` y `es/dark-five.png` (`docs/apps-claro.es.png` y `docs/apps-oscuro.es.png`, para `README.es.md`). |
 | `Release notes` (`release-notes.yml`, `ubuntu-latest`) | A mano | Copia `RELEASE_NOTES.md` a la release de la versión de `Info.plist`. |
 
@@ -96,7 +99,11 @@ Swift no se puede compilar en Linux, así que el CI es la compilación real. Los
 
 ## Actualizaciones y releases
 
-PinVol consulta una vez al día (y cuando lo pides en **Acerca de**, o con **Buscar actualizaciones…** en el menú del ícono de la barra) la última release de GitHub y la compara con su versión. Si hay una nueva, muestra un aviso en la ventana y una entrada en el menú que abre la página de la release; no descarga ni instala nada. Se puede apagar en **Ajustes**. Desde la barra de menús la instancia residente no tiene ventana donde mostrar el resultado, así que aparece junto al ícono unos segundos (`noteInMenuBar` en `main.swift`). La consulta usa la API pública de GitHub, así que el repositorio debe ser público.
+PinVol consulta una vez al día (y cuando lo pides en **Acerca de**, o con **Buscar actualizaciones…** en el menú del ícono de la barra) la última release de GitHub y la compara con su versión. Si hay una nueva, muestra un aviso en la ventana y una entrada en el menú; no se descarga ni instala nada hasta que el usuario lo pide (ver más abajo). Se puede apagar en **Ajustes**. Desde la barra de menús la instancia residente no tiene ventana donde mostrar el resultado, así que aparece junto al ícono unos segundos (`noteInMenuBar` en `main.swift`). La consulta usa la API pública de GitHub, así que el repositorio debe ser público.
+
+**Instalación desde la app.** **Descargar** (aviso, Acerca de o el menú del ícono de la barra) baja el `PinVol.dmg` de la release a `~/Library/Caches/com.claudiouvm.pinvol/Updates` y lo comprueba con el SHA-256 que la API de GitHub publica para el adjunto (`digest`); la entrada pasa entonces a **Instalar PinVol X y reiniciar**. Instalar (`UpdateInstaller.install`) monta la imagen en solo lectura y sin mostrarla, comprueba que la app de dentro tiene el mismo identificador de bundle, la versión esperada (más nueva que la instalada) y una firma íntegra, la copia junto a la instalada, las intercambia con `FileManager.replaceItemAt` y borra la imagen. Después la instancia residente detiene sus motores, abre una instancia nueva con `--updated` (arranca sin ventana y avisa «Actualizada a X» junto al ícono) y termina. La confianza es la misma que al bajar el `.dmg` a mano: la app va firmada ad-hoc, así que no hay identidad que verificar y la huella solo protege de descargas dañadas.
+
+Si la carpeta de la app no admite escritura (no está en Aplicaciones, o corre desde una imagen de disco) o macOS se niega (Privacidad y seguridad → Gestión de apps), el instalador falla con `.notWritable` o `.permission` y se abre la imagen de disco para que el usuario arrastre la app, como siempre. Otros fallos muestran su motivo en Acerca de y el estado vuelve a «disponible». Actualizar cambia la firma ad-hoc, así que macOS puede volver a pedir el permiso de audio. Los pasos quedan en el registro, subsistema `com.claudiouvm.pinvol`, categoría `update`. El CI prueba el instalador de verdad (`tools/test-install.sh` ejecuta `--selftest-install` del binario `-DSNAPSHOT` contra el `.dmg` que acaba de generar), así que mantén `SelfTest.swift` al día con `Installer.swift`.
 
 Para publicar una versión: sube `CFBundleShortVersionString` (y `CFBundleVersion`) en `Info.plist`, actualiza `RELEASE_NOTES.md` (inglés y después español; el CI exige que su primera línea nombre la versión) y haz merge a `main`. El workflow `Release` compila el `.dmg` arm64, lo guarda en `dist/PinVol.dmg` y crea la release `v<versión>` con esas notas si todavía no existe. Si solo cambias las notas, ejecuta el workflow manual `Release notes` para copiarlas a la release existente.
 
@@ -119,4 +126,5 @@ Para etiquetar una versión como beta, añade `PinVolReleaseChannel` = `Beta` en
 - En salidas sin control de volumen por software (algunas HDMI o USB) no hay nada que compensar y la app lo avisa.
 - Las apps con DRM o procesos protegidos pueden no ser capturables.
 - El `.dmg` no está notarizado (haría falta una cuenta de desarrollador de Apple).
-- Al estar firmada ad-hoc, cada recompilación cambia la firma y macOS puede volver a pedir el permiso de audio.
+- Al estar firmada ad-hoc, cada recompilación o actualización cambia la firma y macOS puede volver a pedir el permiso de audio.
+- La instalación desde la app necesita una carpeta con permiso de escritura y, en algunos Mac, el permiso de Gestión de apps; la primera versión que la trae (1.6) hay que instalarla a mano.
