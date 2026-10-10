@@ -47,6 +47,12 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 | `Updates.swift` | Consulta de la última release en GitHub |
 | `Snapshot.swift` | Solo desarrollo: capturas de la ventana |
 
+## Inicio al encender el Mac
+
+Cuando «Abrir al iniciar sesión» abre PinVol (por ejemplo al encender el Mac) y ya hay al menos una app fijada (`Controller.isConfigured`), la instancia residente pasa directo a la barra de menús, o al Dock si el ícono de la barra está desactivado, y no abre la ventana. Si el usuario abre la app, o mientras no haya nada fijado, la ventana se abre como siempre.
+
+macOS marca en el evento de apertura que la app se abrió como elemento de inicio de sesión, pero no siempre, así que hay un respaldo: un arranque pocos segundos después de que empezara la sesión del usuario (la hora de arranque de su proceso `loginwindow`) también cuenta como arranque de inicio: dentro del primer minuto con «Abrir al iniciar sesión» activado, y de 25 segundos si no, para no confundirlo con una apertura manual justo después de iniciar sesión. Si no se encuentra la sesión, solo cuenta un Mac encendido hace menos de dos minutos, y solo con «Abrir al iniciar sesión» activado. Por lo mismo, se ignora un aviso de reapertura en los primeros 10 segundos. La decisión queda en el registro: `log show --last 10m --predicate 'subsystem == "com.claudiouvm.pinvol"'`.
+
 ## Idiomas
 
 La interfaz está en inglés y en español y sigue el idioma del Mac: en español si es el idioma preferido, y en inglés en cualquier otro caso (el inglés es también el idioma de reserva).
