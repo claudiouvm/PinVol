@@ -20,6 +20,8 @@ final class Controller {
     var onStatus: (() -> Void)?
     var onPresence: (() -> Void)?
     var onShow: (() -> Void)?
+    /// Se llama al terminar una búsqueda de actualizaciones pedida por el usuario (no las diarias), con su resultado.
+    var onUpdateChecked: ((UpdateState) -> Void)?
 
     var state: AppState {
         var s = AppState()
@@ -254,5 +256,6 @@ final class Controller {
             update = manual ? UpdateState(kind: .failed, message: e.message) : previous
         }
         broadcast(full: true)
+        if manual { onUpdateChecked?(update) }
     }
 }

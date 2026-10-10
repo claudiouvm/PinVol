@@ -96,7 +96,7 @@ Swift no se puede compilar en Linux, así que el CI es la compilación real. Los
 
 ## Actualizaciones y releases
 
-PinVol consulta una vez al día (y cuando lo pides en **Acerca de**) la última release de GitHub y la compara con su versión. Si hay una nueva, muestra un aviso en la ventana y una entrada en el menú que abre la página de la release; no descarga ni instala nada. Se puede apagar en **Ajustes**. La consulta usa la API pública de GitHub, así que el repositorio debe ser público.
+PinVol consulta una vez al día (y cuando lo pides en **Acerca de**, o con **Buscar actualizaciones…** en el menú del ícono de la barra) la última release de GitHub y la compara con su versión. Si hay una nueva, muestra un aviso en la ventana y una entrada en el menú que abre la página de la release; no descarga ni instala nada. Se puede apagar en **Ajustes**. Desde la barra de menús la instancia residente no tiene ventana donde mostrar el resultado, así que aparece junto al ícono unos segundos (`noteInMenuBar` en `main.swift`). La consulta usa la API pública de GitHub, así que el repositorio debe ser público.
 
 Para publicar una versión: sube `CFBundleShortVersionString` (y `CFBundleVersion`) en `Info.plist`, actualiza `RELEASE_NOTES.md` (inglés y después español; el CI exige que su primera línea nombre la versión) y haz merge a `main`. El workflow `Release` compila el `.dmg` arm64, lo guarda en `dist/PinVol.dmg` y crea la release `v<versión>` con esas notas si todavía no existe. Si solo cambias las notas, ejecuta el workflow manual `Release notes` para copiarlas a la release existente.
 

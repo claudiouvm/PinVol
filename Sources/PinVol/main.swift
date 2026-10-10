@@ -12,6 +12,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var barActive = false
     private var markedAsLoginItem = false   // macOS marcó el evento de apertura como «elemento de inicio de sesión»
     private var quietStart = false          // arrancó sola al iniciar sesión y ya hay apps fijadas: sin ventana
+    private var barNote: DispatchWorkItem?  // retira el mensaje junto al ícono de la barra de menús
     private let launchedAt = Date()
     private let launchLog = Logger(subsystem: "com.claudiouvm.pinvol", category: "launch")
 
@@ -32,6 +33,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         model.onStatus = { [weak self] in self?.statusChanged() }
         model.onPresence = { [weak self] in self?.applyPresence() }
         model.onShow = { [weak self] in self?.showWindow() }
+        model.onUpdateChecked = { [weak self] in self?.showUpdateResult($0) }
         model.start()
         applyPresence()
         #if SNAPSHOT
@@ -129,15 +131,16 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: Menús (barra de menús y Dock)
 
-    func menuNeedsUpdate(_ menu: NSMenu) { fill(menu, includeQuit: true) }
+    func menuNeedsUpdate(_ menu: NSMenu) { fill(menu, forMenuBar: true) }
 
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let m = NSMenu()
-        fill(m, includeQuit: false)   // el Dock añade "Salir" por su cuenta
+        fill(m, forMenuBar: false)   // el Dock añade "Salir" por su cuenta
         return m
     }
 
-    private func fill(_ menu: NSMenu, includeQuit: Bool) {
+    /// El menú de la barra lleva además «Buscar actualizaciones…» y «Salir»; el del Dock no.
+    private func fill(_ menu: NSMenu, forMenuBar: Bool) {
         menu.removeAllItems()
         let st = model.summary
         let head = NSMenuItem(title: st.text, action: nil, keyEquivalent: "")
@@ -151,12 +154,23 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         toggle.target = self
         toggle.state = model.enabled ? .on : .off
         menu.addItem(toggle)
-        if model.update.kind == .available, let v = model.update.latest {
-            let update = NSMenuItem(title: L("Download PinVol %@…", v), action: #selector(openUpdate), keyEquivalent: "")
-            update.target = self
-            menu.addItem(update)
+        switch model.update.kind {
+        case .available:
+            if let v = model.update.latest {
+                let update = NSMenuItem(title: L("Download PinVol %@…", v), action: #selector(openUpdate), keyEquivalent: "")
+                update.target = self
+                menu.addItem(update)
+            }
+        case .checking:
+            if forMenuBar { menu.addItem(NSMenuItem(title: L("Checking…"), action: nil, keyEquivalent: "")) }
+        default:
+            if forMenuBar {
+                let check = NSMenuItem(title: L("Check for updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
+                check.target = self
+                menu.addItem(check)
+            }
         }
-        if includeQuit {
+        if forMenuBar {
             menu.addItem(.separator())
             menu.addItem(withTitle: L("Quit PinVol"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         }
@@ -178,6 +192,35 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openUpdate() {
         if let s = model.update.url, let url = URL(string: s) { NSWorkspace.shared.open(url) }
+    }
+
+    /// Esta instancia no abre ventanas (ver Model.swift), así que el resultado se avisa junto al ícono de la barra de menús.
+    @objc private func checkForUpdates() {
+        model.checkForUpdates(manual: true)
+        noteInMenuBar(L("Checking…"))
+    }
+
+    private func showUpdateResult(_ u: UpdateState) {
+        switch u.kind {
+        case .available: noteInMenuBar(L("New version %@", u.latest ?? ""))
+        case .upToDate: noteInMenuBar(L("Up to date · %@", UpdateChecker.currentVersion))
+        case .failed: noteInMenuBar(L("Couldn't check"))
+        default: break
+        }
+    }
+
+    /// Mensaje breve junto al ícono de la barra de menús; a los 4 s desaparece.
+    private func noteInMenuBar(_ text: String) {
+        guard let button = statusItem?.button else { return }
+        button.title = " " + text
+        button.imagePosition = .imageLeading
+        barNote?.cancel()
+        let clear = DispatchWorkItem { [weak self] in
+            self?.statusItem?.button?.title = ""
+            self?.statusItem?.button?.imagePosition = .imageOnly
+        }
+        barNote = clear
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: clear)
     }
 
     // MARK: Ventana (otra instancia)
