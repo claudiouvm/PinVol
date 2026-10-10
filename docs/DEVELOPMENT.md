@@ -40,7 +40,7 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `Controller.swift` | Saved state, one `Engine` per app, interface messages and the update check |
 | `Audio.swift` | Core Audio: tap, aggregate device, gain, system volume |
 | `Model.swift` | `AppState`, `PinnedApp`, inter-process messaging |
-| `SettingsWindow.swift` | Tabbed window (Apps, Settings, About) and its resize animation |
+| `SettingsWindow.swift` | Tabbed window (Apps, Settings, About) and its resize animation. The **Buy me a coffee!** button in About opens the PayPal donation page (`donateURL`) |
 | `AppsPanel.swift` | Drop zone and app rows |
 | `Style.swift` | Shared labels, cards and settings rows |
 | `Strings.swift` | Interface text (`L("…")`) and language-aware number formats |
