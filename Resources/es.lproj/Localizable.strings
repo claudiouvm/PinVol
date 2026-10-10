@@ -46,6 +46,8 @@
 "Retry" = "Reintentar";
 "Couldn't check" = "No se pudo comprobar";
 "Source code on GitHub" = "Código fuente en GitHub";
+"Buy me a coffee!" = "¡Invítame un café!";
+"Donate with PayPal" = "Donar con PayPal";
 "Downloading… %@" = "Descargando… %@";
 "Downloading PinVol %@… %@" = "Descargando PinVol %@… %@";
 "Ready to install · %@" = "Lista para instalar · %@";

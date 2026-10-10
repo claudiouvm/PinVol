@@ -40,7 +40,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 | `Controller.swift` | Estado guardado, un `Engine` por app, mensajes de la interfaz y comprobación de versión |
 | `Audio.swift` | Core Audio: tap, dispositivo agregado, ganancia, volumen del sistema |
 | `Model.swift` | `AppState`, `PinnedApp`, mensajería entre procesos |
-| `SettingsWindow.swift` | Ventana con pestañas (Apps, Ajustes, Acerca de) y su animación de tamaño |
+| `SettingsWindow.swift` | Ventana con pestañas (Apps, Ajustes, Acerca de) y su animación de tamaño. El botón **¡Invítame un café!** de Acerca de abre la página de donaciones de PayPal (`donateURL`) |
 | `AppsPanel.swift` | Zona de arrastre y filas de apps |
 | `Style.swift` | Etiquetas, tarjetas y filas de ajustes compartidas |
 | `Strings.swift` | Textos de la interfaz (`L("…")`) y formatos de números según el idioma |

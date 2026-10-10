@@ -9,6 +9,11 @@ import ServiceManagement
 final class SettingsWindow: NSObject, NSWindowDelegate {
     private static let positionKey = "windowTopLeft"
     private static let width: CGFloat = 360
+    /// Donación de PayPal del botón «Buy me a coffee!» de Acerca de: los mismos campos que el formulario de su botón «Donate»
+    /// (cuenta, sin pago recurrente, mensaje y dólares), pasados por la dirección, que es como se abre desde un navegador.
+    static let donateURL = URL(string: "https://www.paypal.com/donate/?business=8Z649D8XXB46J&no_recurring=0"
+        + "&item_name=If+you+would+like+to+buy+me+a+coffee%2C+I+will+be+more+than+happy.+Really%2C+I+drink+a+lot+of+coffee%21"
+        + "&currency_code=USD")!
 
     private enum Tab: Int, CaseIterable {
         case apps, settings, about
@@ -298,7 +303,13 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         github.contentTintColor = .linkColor
         github.font = .systemFont(ofSize: 12)
 
-        let aboutViews: [NSView] = [logo, name, versionLabel, madeIn, updateCard, github]
+        let coffee = NSButton(title: L("Buy me a coffee!"), image: symbol("cup.and.saucer.fill", size: 12) ?? NSImage(),
+                              target: self, action: #selector(openDonate))
+        coffee.bezelStyle = .rounded
+        coffee.imagePosition = .imageLeading
+        coffee.toolTip = L("Donate with PayPal")
+
+        let aboutViews: [NSView] = [logo, name, versionLabel, madeIn, updateCard, github, coffee]
         for v in aboutViews { aboutPage.addArrangedSubview(v) }
         aboutPage.orientation = .vertical
         aboutPage.alignment = .centerX
@@ -307,6 +318,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         aboutPage.setCustomSpacing(14, after: versionLabel)
         aboutPage.setCustomSpacing(22, after: madeIn)
         aboutPage.setCustomSpacing(10, after: updateCard)
+        aboutPage.setCustomSpacing(12, after: github)
         updateCard.widthAnchor.constraint(equalTo: aboutPage.widthAnchor).isActive = true
     }
 
@@ -443,6 +455,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     @objc private func openGitHub() { NSWorkspace.shared.open(UpdateChecker.repoURL) }
+
+    @objc private func openDonate() { NSWorkspace.shared.open(Self.donateURL) }
 
     // MARK: Acciones
 
