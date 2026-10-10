@@ -91,7 +91,7 @@ All workflows run on the `macos-26` runner (Apple Silicon, Xcode 26) except the 
 
 | Workflow | When | What it does |
 |---|---|---|
-| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/` or `.md` files change) | Checks the translations (`tools/check-strings.py`). Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Tests the update installer (`tools/test-install.sh`). Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
+| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/`, `.md` files or `.github/FUNDING.yml` change) | Checks the translations (`tools/check-strings.py`). Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Tests the update installer (`tools/test-install.sh`). Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
 | `Screenshots` (`screenshots.yml`) | Manual, or in a pull request that changes `snapshot.sh` or the workflow itself | Installs Spotify, IINA and TIDAL, takes the screenshots (English and Spanish) and uploads them as `capturas-portada`. The front-page images are `en/light-five.png` and `en/dark-five.png` from that artifact (`docs/apps-claro.png` and `docs/apps-oscuro.png`, for `README.md`) and `es/light-five.png` and `es/dark-five.png` (`docs/apps-claro.es.png` and `docs/apps-oscuro.es.png`, for `README.es.md`). |
 | `Release notes` (`release-notes.yml`, `ubuntu-latest`) | Manual | Copies `RELEASE_NOTES.md` to the release of the version in `Info.plist`. |
 
@@ -117,6 +117,7 @@ To label a version as beta, add `PinVolReleaseChannel` = `Beta` to `Info.plist` 
 - `README.md` and `README.es.md`, and this file and `DESARROLLO.md`, are mirrors: change one, change the other.
 - Interface text goes through `L("English text")`, with its Spanish translation in `Resources/es.lproj/Localizable.strings` (see [Languages](#languages)).
 - Merge to `main` once the CI is green.
+- The donation link is in two places that must match: the **Buy me a coffee!** button of About (`SettingsWindow.donateURL`) and GitHub's **Sponsor** button (`.github/FUNDING.yml`).
 
 ## Known limits
 
