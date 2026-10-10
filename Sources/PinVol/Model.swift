@@ -161,14 +161,14 @@ protocol Backend: AnyObject {
 final class RemoteBackend: Backend {
     private(set) var state = AppState()
     var onState: ((AppState, Bool) -> Void)?
-    var onShow: (() -> Void)?
+    var onShow: ((String?) -> Void)?   // la pestaña en que hay que abrir la ventana, si se pidió una
     private var observer: IPCObserver?
 
     init() {
         observer = IPCObserver(IPC.toUI) { [weak self] d in
             guard let self else { return }
             if d["bye"] != nil { return NSApp.terminate(nil) }
-            if d["show"] != nil { self.onShow?(); return }
+            if d["show"] != nil { self.onShow?(d["tab"] as? String); return }
             let incoming = AppState(d)
             let full = d["full"] as? Bool ?? true
             #if SNAPSHOT

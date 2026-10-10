@@ -91,6 +91,7 @@
 
 /* Menús (barra de menús, Dock y menú principal) */
 "Show PinVol" = "Mostrar PinVol";
+"About PinVol" = "Acerca de PinVol";
 "Check for updates…" = "Buscar actualizaciones…";
 "Quit PinVol" = "Salir de PinVol";
 "Download PinVol %@…" = "Descargar PinVol %@…";

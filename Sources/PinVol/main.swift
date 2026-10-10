@@ -142,7 +142,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return m
     }
 
-    /// El menú de la barra lleva además «Buscar actualizaciones…» y «Salir»; el del Dock no.
+    /// El menú de la barra lleva además «Acerca de PinVol», «Buscar actualizaciones…» y «Salir»; el del Dock no.
     private func fill(_ menu: NSMenu, forMenuBar: Bool) {
         menu.removeAllItems()
         let st = model.summary
@@ -153,6 +153,11 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "")
         show.target = self
         menu.addItem(show)
+        if forMenuBar {
+            let about = NSMenuItem(title: L("About PinVol"), action: #selector(showAbout), keyEquivalent: "")
+            about.target = self
+            menu.addItem(about)
+        }
         let toggle = NSMenuItem(title: L("Keep levels fixed"), action: #selector(toggleEnabled), keyEquivalent: "")
         toggle.target = self
         toggle.state = model.enabled ? .on : .off
@@ -260,9 +265,15 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: Ventana (otra instancia)
 
-    @objc private func showWindow() {
+    @objc private func showWindow() { openWindow(tab: nil) }
+
+    /// «Acerca de PinVol»: la ventana se abre (o se trae al frente) directamente en esa pestaña.
+    @objc private func showAbout() { openWindow(tab: "about") }
+
+    /// Abre la ventana, en la pestaña `tab` si se pide una (apps, settings o about).
+    private func openWindow(tab: String?) {
         if let ui = uiApp, !ui.isTerminated {
-            raise(ui)
+            raise(ui, tab: tab)
             return
         }
         guard !launchingUI else { return }
@@ -270,7 +281,9 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let cfg = NSWorkspace.OpenConfiguration()
         cfg.createsNewApplicationInstance = true
         cfg.activates = true
-        cfg.arguments = ["--ui"]
+        var arguments = ["--ui"]
+        if let tab { arguments += ["--tab", tab] }
+        cfg.arguments = arguments
         #if SNAPSHOT
         cfg.environment = ProcessInfo.processInfo.environment.filter { $0.key.hasPrefix("PV_") }
         #endif
@@ -285,11 +298,13 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Trae al frente la ventana de la instancia de interfaz que ya está abierta.
     /// Desde macOS 14 una app no puede activar a otra por las buenas: primero debe estar activa ella misma
     /// (acaba de recibir un clic en el Dock o en el menú) y ceder la activación.
-    private func raise(_ ui: NSRunningApplication) {
+    private func raise(_ ui: NSRunningApplication, tab: String?) {
         NSApp.activate()
         NSApp.yieldActivation(to: ui)
         ui.activate()
-        IPC.post(IPC.toUI, ["show": true])   // la propia ventana también se pone delante
+        var info: [String: Any] = ["show": true]   // la propia ventana también se pone delante
+        if let tab { info["tab"] = tab }
+        IPC.post(IPC.toUI, info)
     }
 }
 
