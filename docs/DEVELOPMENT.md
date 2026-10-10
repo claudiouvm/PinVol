@@ -42,7 +42,7 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `Controller.swift` | Saved state, one `Engine` per app, interface messages and the update check |
 | `Audio.swift` | Core Audio: tap, aggregate device, gain, system volume |
 | `Model.swift` | `AppState`, `PinnedApp`, inter-process messaging |
-| `SettingsWindow.swift` | Tabbed window (Apps, Settings, About) and its resize animation. The **Buy me a coffee!** button in About opens the PayPal donation page (`donateURL`) |
+| `SettingsWindow.swift` | Tabbed window (Apps, Settings, About) and its resize animation. The **Buy me a coffee!** button in About opens the Ko-fi page (`donateURL`) |
 | `AppsPanel.swift` | Drop zone and app rows |
 | `Style.swift` | Shared labels, cards and settings rows |
 | `Strings.swift` | Interface text (`L("…")`) and language-aware number formats |
@@ -119,7 +119,7 @@ To label a version as beta, add `PinVolReleaseChannel` = `Beta` to `Info.plist` 
 - `README.md` and `README.es.md`, and this file and `DESARROLLO.md`, are mirrors: change one, change the other.
 - Interface text goes through `L("English text")`, with its Spanish translation in `Resources/es.lproj/Localizable.strings` (see [Languages](#languages)).
 - Merge to `main` once the CI is green.
-- The donation link is in several places that must match: the **Buy me a coffee!** button of About (`SettingsWindow.donateURL`), GitHub's **Sponsor** button (`.github/FUNDING.yml`) and the **Buy me a coffee!** link next to the download link of both READMEs (a text link, not an image badge: text inside an image may not be clickable in every browser).
+- The Ko-fi link (`https://ko-fi.com/claudiouvm`) is in several places that must match: the **Buy me a coffee!** button of About (`SettingsWindow.donateURL`), GitHub's **Sponsor** button (`.github/FUNDING.yml`, key `ko_fi`) and the **Buy me a coffee!** link next to the download link of both READMEs (a text link, not an image badge: text inside an image may not be clickable in every browser).
 
 ## Known limits
 
