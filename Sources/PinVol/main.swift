@@ -1,4 +1,6 @@
 import AppKit
+import os
+import ServiceManagement
 
 // MARK: - Instancia residente (por defecto)
 
@@ -8,12 +10,19 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var uiApp: NSRunningApplication?
     private var launchingUI = false
     private var barActive = false
-    private var launchedAtLogin = false
+    private var markedAsLoginItem = false   // macOS marcó el evento de apertura como «elemento de inicio de sesión»
+    private var quietStart = false          // arrancó sola al iniciar sesión y ya hay apps fijadas: sin ventana
+    private let launchedAt = Date()
+    private let launchLog = Logger(subsystem: "com.claudiouvm.pinvol", category: "launch")
+
+    /// Al abrirse como elemento de inicio de sesión, macOS lo marca en el evento de apertura.
+    private func openedAsLoginItem() -> Bool {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        return event?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == AEKeyword(keyAELaunchedAsLogInItem)
+    }
 
     func applicationWillFinishLaunching(_ n: Notification) {
-        // Al abrirse como elemento de inicio de sesión, la app arranca sin mostrar la ventana.
-        let event = NSAppleEventManager.shared().currentAppleEvent
-        launchedAtLogin = event?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == AEKeyword(keyAELaunchedAsLogInItem)
+        markedAsLoginItem = openedAsLoginItem()   // según la versión de macOS, el evento está en este aviso o en el siguiente
     }
 
     func applicationDidFinishLaunching(_ n: Notification) {
@@ -30,11 +39,44 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             devLog("residente: dock=\(self?.model.showDock ?? false) barra=\(self?.statusItem != nil) política=\(NSApp.activationPolicy().rawValue)")
         }
         #endif
-        if !launchedAtLogin { DispatchQueue.main.async { self.showWindow() } }
+        // Al encender el Mac y abrirse sola (con «Abrir al iniciar sesión»), si ya hay apps fijadas pasa directo a la barra de
+        // menús: la ventana solo estorba. Si el usuario abre la app, o mientras no haya nada fijado, se muestra como siempre.
+        markedAsLoginItem = markedAsLoginItem || openedAsLoginItem()
+        let bySession = !markedAsLoginItem && startedWithSession()
+        quietStart = (markedAsLoginItem || bySession) && model.isConfigured
+        launchLog.notice("inicio: evento=\(self.markedAsLoginItem, privacy: .public) sesión=\(bySession, privacy: .public) fijadas=\(self.model.apps.count, privacy: .public) → \(self.quietStart ? "barra de menús" : "ventana", privacy: .public)")
+        if !quietStart { DispatchQueue.main.async { self.showWindow() } }
+    }
+
+    /// Respaldo para cuando macOS no marca el evento de apertura (no siempre lo hace con los elementos de inicio de sesión):
+    /// la app arrancó pocos segundos después de empezar la sesión del usuario, que es lo que tardan en abrirse sus elementos
+    /// de inicio. La sesión empieza con su proceso loginwindow. Con «Abrir al iniciar sesión» activado (SMAppService) el margen
+    /// es de un minuto; si no, solo de 25 s, para no confundir con un arranque manual justo después de iniciar sesión.
+    private func startedWithSession() -> Bool {
+        let registered = SMAppService.mainApp.status == .enabled
+        let limit: TimeInterval = registered ? 60 : 25
+        let session = NSWorkspace.shared.runningApplications
+            .first { $0.bundleIdentifier == "com.apple.loginwindow" }
+            .flatMap { processStart($0.processIdentifier) ?? $0.launchDate }
+        // Sin poder localizar la sesión, solo se acepta un Mac recién encendido y con el elemento de inicio activado.
+        guard let session else { return registered && ProcessInfo.processInfo.systemUptime < 120 }
+        return (0..<limit).contains(launchedAt.timeIntervalSince(session))
+    }
+
+    /// Cuándo empezó el proceso `pid`, o nil si el sistema no lo dice.
+    private func processStart(_ pid: pid_t) -> Date? {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+        guard sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0) == 0, size > 0 else { return nil }
+        let t = info.kp_proc.p_un.__p_starttime
+        return Date(timeIntervalSince1970: TimeInterval(t.tv_sec) + TimeInterval(t.tv_usec) / 1_000_000)
     }
 
     func applicationShouldHandleReopen(_ app: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        showWindow()   // clic en el ícono del Dock, o doble clic en la app
+        // Al encender el Mac, macOS puede mandar este aviso justo después de abrir la app: no es un clic del usuario.
+        let justStarted = Date().timeIntervalSince(launchedAt) < 10
+        if !(quietStart && justStarted) { showWindow() }   // clic en el ícono del Dock, o doble clic en la app
         return true
     }
 

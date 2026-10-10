@@ -34,6 +34,8 @@ final class Controller {
 
     var summary: EngineStatus { state.summary }
     var anyActive: Bool { apps.contains { $0.status.kind == .active } }
+    /// ¿Ya hay algo configurado? Con apps fijadas, al arrancar sola la app basta con el ícono de la barra de menús.
+    var isConfigured: Bool { !apps.isEmpty }
 
     init(defaults: UserDefaults) {
         self.defaults = defaults

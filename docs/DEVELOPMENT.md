@@ -47,6 +47,12 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `Updates.swift` | Latest-release lookup on GitHub |
 | `Snapshot.swift` | Development only: window screenshots |
 
+## Startup at login
+
+When "Open at login" launches PinVol (for instance when the Mac is turned on) and at least one app is already pinned (`Controller.isConfigured`), the resident instance goes straight to the menu bar, or to the Dock if the menu bar icon is off, and does not open the window. When the user opens the app, or while nothing is pinned yet, the window opens as usual.
+
+macOS marks a login-item launch in the open-application Apple event, but not always, so there is a fallback: a start a few seconds after the user's session began (the start time of their `loginwindow` process) counts as a login start too: within a minute when "Open at login" is on, within 25 seconds otherwise, so that a manual launch right after logging in is not mistaken for it. If the session cannot be found, only a Mac turned on less than two minutes ago counts, and only with "Open at login" on. A reopen event in the first 10 seconds is ignored for the same reason. The decision is logged: `log show --last 10m --predicate 'subsystem == "com.claudiouvm.pinvol"'`.
+
 ## Languages
 
 The interface is in English and Spanish and follows the Mac's language: Spanish when it is the preferred language, English in any other case (English is also the fallback).
