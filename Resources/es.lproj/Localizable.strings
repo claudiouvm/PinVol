@@ -54,6 +54,7 @@
 "Install PinVol %@ and restart" = "Instalar PinVol %@ y reiniciar";
 "Installing…" = "Instalando…";
 "Updated to %@" = "Actualizada a %@";
+"Installed · reopen PinVol" = "Instalada · vuelve a abrir PinVol";
 "Couldn't download" = "No se pudo descargar";
 "Couldn't install" = "No se pudo instalar";
 "The release has no PinVol.dmg" = "La release no trae PinVol.dmg";

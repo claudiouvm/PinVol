@@ -122,6 +122,9 @@ enum UpdateInstaller {
             try run("/usr/bin/ditto", [source.path, staging.path])
             _ = try? run("/usr/bin/xattr", ["-dr", "com.apple.quarantine", staging.path])
             _ = try fm.replaceItemAt(target, withItemAt: staging, backupItemName: nil, options: [])
+            // `replaceItemAt` puede dejar en la app nueva los atributos de la vieja: sin la marca de cuarentena (si la vieja la
+            // tenía) macOS no vuelve a revisarla al abrirla, ni bloquea la reapertura.
+            _ = try? run("/usr/bin/xattr", ["-dr", "com.apple.quarantine", target.path])
         } catch {
             try? fm.removeItem(at: staging)
             log.notice("instalación fallida: \(error.localizedDescription, privacy: .public)")
