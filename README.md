@@ -33,7 +33,7 @@
 <p align="center">
   <a href="https://github.com/claudiouvm/PinVol/releases/latest/download/PinVol.dmg"><b>⬇️ Download PinVol.dmg</b></a>
   &nbsp;·&nbsp;
-  <a href="https://www.paypal.com/donate/?business=8Z649D8XXB46J&amp;no_recurring=0&amp;item_name=If+you+would+like+to+buy+me+a+coffee%2C+I+will+be+more+than+happy.+Really%2C+I+drink+a+lot+of+coffee%21&amp;currency_code=USD">☕ Buy me a coffee!</a>
+  <a href="https://ko-fi.com/claudiouvm">☕ Buy me a coffee!</a>
 </p>
 
 * * *

@@ -42,7 +42,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 | `Controller.swift` | Estado guardado, un `Engine` por app, mensajes de la interfaz y comprobación de versión |
 | `Audio.swift` | Core Audio: tap, dispositivo agregado, ganancia, volumen del sistema |
 | `Model.swift` | `AppState`, `PinnedApp`, mensajería entre procesos |
-| `SettingsWindow.swift` | Ventana con pestañas (Apps, Ajustes, Acerca de) y su animación de tamaño. El botón **¡Invítame un café!** de Acerca de abre la página de donaciones de PayPal (`donateURL`) |
+| `SettingsWindow.swift` | Ventana con pestañas (Apps, Ajustes, Acerca de) y su animación de tamaño. El botón **¡Invítame un café!** de Acerca de abre la página de Ko-fi (`donateURL`) |
 | `AppsPanel.swift` | Zona de arrastre y filas de apps |
 | `Style.swift` | Etiquetas, tarjetas y filas de ajustes compartidas |
 | `Strings.swift` | Textos de la interfaz (`L("…")`) y formatos de números según el idioma |
@@ -119,7 +119,7 @@ Para etiquetar una versión como beta, añade `PinVolReleaseChannel` = `Beta` en
 - `README.md` y `README.es.md`, y este archivo y `DEVELOPMENT.md`, son espejos: si cambias uno, cambia el otro.
 - Los textos de la interfaz pasan por `L("English text")`, con su traducción al español en `Resources/es.lproj/Localizable.strings` (ver [Idiomas](#idiomas)).
 - Se hace merge a `main` cuando el CI está en verde.
-- El enlace de donaciones está en varios sitios que deben coincidir: el botón **¡Invítame un café!** de Acerca de (`SettingsWindow.donateURL`), el botón **Sponsor** de GitHub (`.github/FUNDING.yml`) y el enlace **¡Invítame un café!** junto al de descarga de los dos README (un enlace de texto, no una insignia de imagen: el texto dentro de una imagen puede no ser clicable en todos los navegadores).
+- El enlace de Ko-fi (`https://ko-fi.com/claudiouvm`) está en varios sitios que deben coincidir: el botón **¡Invítame un café!** de Acerca de (`SettingsWindow.donateURL`), el botón **Sponsor** de GitHub (`.github/FUNDING.yml`, clave `ko_fi`) y el enlace **¡Invítame un café!** junto al de descarga de los dos README (un enlace de texto, no una insignia de imagen: el texto dentro de una imagen puede no ser clicable en todos los navegadores).
 
 ## Límites conocidos
 
