@@ -23,7 +23,6 @@
   <img alt="Telemetría" src="https://img.shields.io/badge/telemetr%C3%ADa-ninguna-brightgreen?style=flat-square">
   <a href="LICENSE"><img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-green?style=flat-square"></a>
   <a href="https://github.com/claudiouvm/PinVol/pulls"><img alt="PRs bienvenidos" src="https://img.shields.io/badge/PRs-bienvenidos-ff69b4?style=flat-square"></a>
-  <a href="https://www.paypal.com/donate/?business=8Z649D8XXB46J&amp;no_recurring=0&amp;item_name=If+you+would+like+to+buy+me+a+coffee%2C+I+will+be+more+than+happy.+Really%2C+I+drink+a+lot+of+coffee%21&amp;currency_code=USD"><img alt="¡Invítame un café!" src="https://img.shields.io/badge/%C2%A1Inv%C3%ADtame%20un%20caf%C3%A9!-PayPal-FFC439?style=flat-square&logo=paypal"></a>
 </p>
 
 <p align="center">
@@ -33,6 +32,8 @@
 
 <p align="center">
   <a href="https://github.com/claudiouvm/PinVol/releases/latest/download/PinVol.dmg"><b>⬇️ Descargar PinVol.dmg</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://www.paypal.com/donate/?business=8Z649D8XXB46J&amp;no_recurring=0&amp;item_name=If+you+would+like+to+buy+me+a+coffee%2C+I+will+be+more+than+happy.+Really%2C+I+drink+a+lot+of+coffee%21&amp;currency_code=USD">☕ ¡Invítame un café!</a>
 </p>
 
 * * *

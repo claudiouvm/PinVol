@@ -119,7 +119,7 @@ Para etiquetar una versión como beta, añade `PinVolReleaseChannel` = `Beta` en
 - `README.md` y `README.es.md`, y este archivo y `DEVELOPMENT.md`, son espejos: si cambias uno, cambia el otro.
 - Los textos de la interfaz pasan por `L("English text")`, con su traducción al español en `Resources/es.lproj/Localizable.strings` (ver [Idiomas](#idiomas)).
 - Se hace merge a `main` cuando el CI está en verde.
-- El enlace de donaciones está en varios sitios que deben coincidir: el botón **¡Invítame un café!** de Acerca de (`SettingsWindow.donateURL`), el botón **Sponsor** de GitHub (`.github/FUNDING.yml`) y la insignia **¡Invítame un café!** de los dos README.
+- El enlace de donaciones está en varios sitios que deben coincidir: el botón **¡Invítame un café!** de Acerca de (`SettingsWindow.donateURL`), el botón **Sponsor** de GitHub (`.github/FUNDING.yml`) y el enlace **¡Invítame un café!** junto al de descarga de los dos README (un enlace de texto, no una insignia de imagen: el texto dentro de una imagen puede no ser clicable en todos los navegadores).
 
 ## Límites conocidos
 
