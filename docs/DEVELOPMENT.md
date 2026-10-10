@@ -119,7 +119,7 @@ To label a version as beta, add `PinVolReleaseChannel` = `Beta` to `Info.plist` 
 - `README.md` and `README.es.md`, and this file and `DESARROLLO.md`, are mirrors: change one, change the other.
 - Interface text goes through `L("English text")`, with its Spanish translation in `Resources/es.lproj/Localizable.strings` (see [Languages](#languages)).
 - Merge to `main` once the CI is green.
-- The donation link is in two places that must match: the **Buy me a coffee!** button of About (`SettingsWindow.donateURL`) and GitHub's **Sponsor** button (`.github/FUNDING.yml`).
+- The donation link is in several places that must match: the **Buy me a coffee!** button of About (`SettingsWindow.donateURL`), GitHub's **Sponsor** button (`.github/FUNDING.yml`) and the **Buy me a coffee!** badge of both READMEs.
 
 ## Known limits
 
