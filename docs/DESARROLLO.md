@@ -73,18 +73,18 @@ La interfaz está en inglés y en español y sigue el idioma del Mac: en españo
 La ventana apunta a **WCAG 2.2 AA** y a las HIG de macOS:
 
 - Cada control tiene nombre accesible y los íconos decorativos quedan ocultos para VoiceOver. Cada fila de app es un grupo, y su slider y su botón de quitar nombran la app a la que pertenecen.
-- El estado se escribe, no solo se colorea: cada fila dice `Activo`, `En espera…`, `Error`… y la explicación de un error es visible, con **Abrir Ajustes del Sistema** y **Reintentar**, en lugar de vivir en un tooltip.
+- El estado se escribe, no solo se colorea: cada fila dice `Activo`, `En espera…`, `Error`… y la explicación de un error es visible, con **Abrir Ajustes** y **Reintentar**, en lugar de vivir en un tooltip.
 - Los mensajes breves (pie y barra de menús) se publican como anuncios de accesibilidad: quien usa VoiceOver los oye.
 - Los botones que son solo un ícono miden al menos 24×24 pt (el de quitar, 24×24).
 - La ventana se dimensiona con la pestaña más alta (Apps, Ajustes o Acerca de), así que cambiar de pestaña no la redimensiona; un separador flexible mantiene el pie abajo y Acerca de usa la misma cabecera y alineación izquierda que el resto.
-- **⌥⌘P** abre o trae la ventana desde cualquier app: la interfaz es otro proceso y no aparece en ⌘Tab.
+- **⌥⌘P** abre o trae la ventana desde cualquier app. La ventana corre en un proceso aparte sin ícono en el Dock; ⌘Tab muestra la residente cuando **Mostrar en el Dock** está activo.
 - El texto sigue el tamaño de cuerpo del sistema y se puede forzar con `PV_TEXT_SCALE`; la ventana se redimensiona, hace scroll si el contenido no cabe y omite las animaciones con «Reducir movimiento».
-- Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste. La barra de pestañas es propia (`TabBar`) para que la etiqueta seleccionada garantice 4,5:1, algo que el control segmentado del sistema no permite.
+- Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste. La barra de pestañas es propia (`TabBar`) para que la etiqueta seleccionada garantice 4,5:1, algo que el control segmentado del sistema no permite. El slider usa `ContrastSliderCell` (track y knob ≥3:1) y los botones de acción usan `PillButton`, cuyo bisel crece con el texto.
 - Añadir apps no depende de arrastrar: **Fijar app…** (⌘O) abre el panel del sistema, y **Quitar app** (⌫) con **⌘Z** cubren el teclado.
 
-`tools/test-a11y.sh` compila la variante `-DSNAPSHOT` y ejecuta `--selftest-contrast` (fórmula WCAG sobre la paleta, claro y oscuro) y `--selftest-a11y` (nombres, imágenes decorativas, botones de solo ícono de 24 pt, foco inicial y títulos de botones, con el texto al 100 % y al 150 %). El CI lo ejecuta. Para una pasada visual: `PV_TEXT_SCALE=2 ./snapshot.sh` genera la ventana al 200 %. La pasada con VoiceOver es manual: recorre la ventana, fija una app con ⌘O, deniega el permiso de audio, quita una app con ⌫ y deshaz con ⌘Z.
+`tools/test-a11y.sh` compila la variante `-DSNAPSHOT` y ejecuta `--selftest-contrast` (fórmula WCAG sobre la paleta, claro y oscuro) y `--selftest-a11y` (nombres, imágenes decorativas, botones de solo ícono de 24 pt, foco inicial y títulos de botones, con el texto al 100 % y al 150 %). El CI lo ejecuta. Para una pasada visual: `PV_TEXT_SCALE=2 ./snapshot.sh` genera la ventana al 200 %.
 
-Límites conocidos: el track del slider lo dibuja AppKit; los biseles de los botones usan los tamaños de control del sistema, así que su texto crece menos que el resto. La instancia de interfaz no aparece en ⌘Tab (se entra con ⌥⌘P o desde el Dock/barra); ponerla ahí obligaría a fusionarla con la residente y se perdería la optimización de memoria.
+Límites conocidos: la ventana corre en un proceso aparte. ⌘Tab muestra la residente (con **Mostrar en el Dock** activo) y al elegirla se abre o se trae la ventana; con el ícono del Dock apagado, se entra con ⌥⌘P o desde la barra. El proceso de interfaz no tiene ícono propio.
 
 Ver [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) para la auditoría que dio origen a esto.
 

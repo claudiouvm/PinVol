@@ -20,7 +20,7 @@
 "Remove %@" = "Quitar %@";
 "Remove app" = "Quitar app";
 "Remove App" = "Quitar app";
-"Open System Settings" = "Abrir Ajustes del Sistema";
+"Open Settings" = "Abrir Ajustes";
 "Open audio settings for %@" = "Abrir los ajustes de audio de %@";
 "Retry %@" = "Reintentar %@";
 "Couldn't capture the audio" = "No se pudo capturar el audio";
@@ -117,8 +117,6 @@
 "Download progress" = "Progreso de la descarga";
 "Couldn't update" = "No se pudo actualizar";
 "OK" = "OK";
-"Update to %@" = "Actualizar a %@";
-"Install %@" = "Instalar %@";
 "Fixed levels are on now" = "Los niveles fijos se han activado";
 "App added back" = "App añadida de nuevo";
 "Quit PinVol?" = "¿Salir de PinVol?";
@@ -140,3 +138,4 @@
 "Download update" = "Descargar actualización";
 "Install update" = "Instalar actualización";
 "Retry the update" = "Reintentar la actualización";
+"Update" = "Actualizar";

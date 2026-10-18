@@ -13,7 +13,7 @@ final class DropCard: NSView {
     var highlighted = false { didSet { needsDisplay = true } }
     var onAdd: (() -> Void)?
     private let bigStack = NSStackView()
-    private let addButton = NSButton(title: L("Pin App…"), target: nil, action: nil)
+    private let addButton = PillButton(title: L("Pin App…"))
     private let compactButton = NSButton(title: "", target: nil, action: nil)
     private var heightConstraint: NSLayoutConstraint!
     private var compact = false { didSet { needsDisplay = true } }
@@ -37,8 +37,6 @@ final class DropCard: NSView {
 
         addButton.target = self
         addButton.action = #selector(addTapped)
-        addButton.bezelStyle = .rounded
-        addButton.controlSize = scaledControlSize(.small)
         addButton.setAccessibilityHelp(L("Opens a panel to choose the app whose volume you want to keep fixed"))
 
         for v in [icon, title, caption, explanation, addButton] { bigStack.addArrangedSubview(v) }
@@ -123,8 +121,8 @@ final class AppRow: NSView {
     private let percent = makeLabel("", size: 11, color: .secondaryLabelColor)
     private let detailBox = NSStackView()
     private let detailLabel = makeLabel("", size: 11, color: .secondaryLabelColor)
-    private let fixButton = NSButton(title: L("Open System Settings"), target: nil, action: nil)
-    private let retryButton = NSButton(title: L("Retry"), target: nil, action: nil)
+    private let fixButton = PillButton(title: L("Open Settings"))
+    private let retryButton = PillButton(title: L("Retry"))
     private let rowStack = NSStackView()
     private let removeButton = NSButton()
     private var dragging = false
@@ -158,10 +156,15 @@ final class AppRow: NSView {
         top.alignment = .centerY
         top.spacing = 5
 
+        slider.cell = ContrastSliderCell()
+        slider.minValue = 0
+        slider.maxValue = 1
+        slider.floatValue = 0.5
         slider.target = self
         slider.action = #selector(sliderMoved)
         slider.isContinuous = true
-        slider.controlSize = .regular
+        slider.controlSize = textScale >= 1.45 ? .large : .regular
+        slider.heightAnchor.constraint(greaterThanOrEqualToConstant: max(24, scaled(24))).isActive = true
         slider.setAccessibilityLabel(L("Fixed level for %@", appName))
         slider.setAccessibilityHelp(L("The volume %@ will play at, on the same scale as the system volume", appName))
         slider.toolTip = L("The volume %@ will play at, on the same scale as the system volume", appName)
@@ -181,10 +184,6 @@ final class AppRow: NSView {
         detailLabel.maximumNumberOfLines = 3
         detailLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         detailLabel.setAccessibilityElement(false)
-        for b in [fixButton, retryButton] {
-            b.bezelStyle = .rounded
-            b.controlSize = scaledControlSize(.small)
-        }
         fixButton.target = self
         fixButton.action = #selector(openSettingsTapped)
         fixButton.setAccessibilityLabel(L("Open audio settings for %@", appName))

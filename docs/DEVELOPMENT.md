@@ -73,18 +73,18 @@ The interface is in English and Spanish and follows the Mac's language: Spanish 
 The window targets **WCAG 2.2 AA** and the macOS HIG:
 
 - Every control has an accessibility name and decorative icons are hidden from VoiceOver. Each app row is a group, and its slider and removal button name the app they belong to.
-- Status is written, not only colored: every row says `Active`, `Waiting…`, `Error`… and an error's explanation is visible, with **Open System Settings** and **Retry**, instead of living in a tooltip.
+- Status is written, not only colored: every row says `Active`, `Waiting…`, `Error`… and an error's explanation is visible, with **Open Settings** and **Retry**, instead of living in a tooltip.
 - Brief messages (footer, menu bar) are posted as accessibility announcements, so VoiceOver users hear them.
 - Icon-only buttons are at least 24×24 pt (the removal button is 24×24).
 - The window is sized to the tallest tab (Apps, Settings or About), so switching tabs does not resize it; a flexible spacer keeps the footer at the bottom and About uses the same header and left alignment as the rest.
-- **⌥⌘P** opens or raises the window from any app: the interface is a separate process and does not appear in ⌘Tab.
+- **⌥⌘P** opens or raises the window from any app. The window runs in a separate process without a Dock tile; ⌘Tab shows the resident when **Show in the Dock** is on.
 - Text follows the system body size and can be forced with `PV_TEXT_SCALE`; the window is resizable, scrolls when the content does not fit, and skips animations when Reduce Motion is on.
-- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting. The tab bar is custom (`TabBar`) so the selected label guarantees 4.5:1, which the system segmented control does not allow.
+- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting. The tab bar is custom (`TabBar`) so the selected label guarantees 4.5:1, which the system segmented control does not allow. The slider uses `ContrastSliderCell` (track and knob ≥3:1) and action buttons use `PillButton`, whose bezel grows with the text.
 - Adding apps does not depend on dragging: **Pin App…** (⌘O) opens the standard panel, and **Remove App** (⌫) plus **⌘Z** cover the keyboard.
 
-`tools/test-a11y.sh` builds the `-DSNAPSHOT` variant and runs `--selftest-contrast` (WCAG math on the palette, light and dark) and `--selftest-a11y` (names, decorative images, 24 pt icon-only buttons, initial focus and button titles, at 100 % and 150 % text). The CI runs it. For a visual pass: `PV_TEXT_SCALE=2 ./snapshot.sh` renders the window at 200 %. The VoiceOver pass is manual: walk the window, pin an app with ⌘O, deny the audio permission, remove an app with ⌫ and undo with ⌘Z.
+`tools/test-a11y.sh` builds the `-DSNAPSHOT` variant and runs `--selftest-contrast` (WCAG math on the palette, light and dark) and `--selftest-a11y` (names, decorative images, 24 pt icon-only buttons, initial focus and button titles, at 100 % and 150 % text). The CI runs it. For a visual pass: `PV_TEXT_SCALE=2 ./snapshot.sh` renders the window at 200 %.
 
-Known limits: the slider track is drawn by AppKit; button bezels use the system control sizes, so their labels grow less than the rest of the text. The interface instance does not appear in ⌘Tab (⌥⌘P and the Dock/menu bar are the ways in); putting it there would mean merging it with the resident process and losing the memory optimization.
+Known limits: the window runs in a separate process. ⌘Tab lists the resident (when **Show in the Dock** is on), and choosing it opens or raises the window; with the Dock icon off, use ⌥⌘P or the menu bar. The interface process itself has no Dock tile.
 
 See [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) for the audit behind this.
 

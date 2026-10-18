@@ -174,7 +174,7 @@ Las capturas se generaron con la variante de desarrollo (`-DSNAPSHOT`, bundle `c
 
 ## Limitaciones del análisis
 
-- No se ejecutó la app instalada para no capturar ni mutear audio del sistema; el comportamiento de VoiceOver se deduce del árbol de vistas y de la ausencia de API de anuncios. Falta una pasada manual con VoiceOver en macOS 26/27.
+- No se ejecutó la app instalada para no capturar ni mutear audio del sistema; el árbol AX y los anuncios se comprueban con `--selftest-a11y`. La locución de VoiceOver queda fuera del alcance de las comprobaciones del repo.
 - El track del slider y el color de acento de la pestaña los dibuja AppKit; el contraste de esos elementos no se puede garantizar desde la app.
 - El contraste se midió sobre capturas a 2x; el antialiasing puede variar ±0,05 en los ratios.
 - El área de clic del `×` no se midió en vivo: se deduce del tamaño del símbolo (15 pt) y de la ausencia de frame.
@@ -203,7 +203,7 @@ Corregidos en la rama `audit/accesibilidad-ux` (PR #20), después de la primera 
 | A6 | Corregido | Cualquier archivo se acepta al arrastrar; si no es una app, la ventana lo dice («Solo se pueden fijar apps (.app)») en vez de vetar el arrastre en silencio. |
 | V10 | Corregido | El enlace de GitHub lleva subrayado y rótulo accesible, no solo color. |
 | C6 | Corregido | `NSSegmentedControl` se sustituyó por una barra propia (`TabBar`) porque el control del sistema no permite cambiar el color del segmento; el acento se oscurece hasta 4,5:1 (medido: 4,67:1). |
-| U9 | Mitigado | La interfaz sigue sin aparecer en ⌘Tab (es otro proceso sin ícono propio), pero ⌥⌘P abre o trae la ventana desde cualquier app. Aparecer en ⌘Tab exigiría fusionar la interfaz con la residente y perder la optimización de memoria. |
+| U9 | Mitigado | La ventana no aparece en ⌘Tab (es otro proceso), pero la app sí a través de la residente cuando «Mostrar en el Dock» está activo: elegirla abre o trae la ventana. Con el ícono del Dock apagado, ⌥⌘P la abre desde cualquier app. |
 | M5 | Corregido | Los números usan idioma + región del Mac (`es_CL` → «45 %» pasa a «45%» y «11,9 dB»); las capturas fijan la región con `-AppleLocale`. |
 
 Comprobado con `tools/test-a11y.sh` (contraste y árbol AX en 9 estados, al 100 % y 150 %) y `snapshot.sh`; ambos en el CI.
