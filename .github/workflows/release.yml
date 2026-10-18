@@ -24,7 +24,7 @@ jobs:
   dmg:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Entorno
         run: |
@@ -68,7 +68,7 @@ jobs:
       - name: Probar la instalación de una actualización
         run: tools/test-install.sh
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: PinVol-dmg
           path: dist/PinVol.dmg
@@ -82,7 +82,7 @@ jobs:
           APPS: com.apple.Music,com.apple.Safari,com.apple.Notes,com.apple.Maps,com.apple.TextEdit
         run: ./snapshot.sh build/snapshots
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: capturas
           path: build/snapshots
