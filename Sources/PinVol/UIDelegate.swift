@@ -135,7 +135,10 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
         let windowItem = NSMenuItem()
         main.addItem(windowItem)
         let windowMenu = NSMenu(title: L("Window"))
+        windowMenu.addItem(chained(L("Minimize"), #selector(NSWindow.performMiniaturize(_:)), "m"))
+        windowMenu.addItem(chained(L("Zoom"), #selector(NSWindow.performZoom(_:)), ""))
         windowMenu.addItem(withTitle: L("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        windowMenu.addItem(.separator())
         windowMenu.addItem(chained(L("Bring All to Front"), #selector(NSApplication.arrangeInFront(_:)), ""))
         windowItem.submenu = windowMenu
 

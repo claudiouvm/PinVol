@@ -112,7 +112,9 @@ func contrastRatio(_ a: NSColor, _ b: NSColor) -> CGFloat {
 let cardFill = NSColor(name: nil) { appearance in
     let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
     let high = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-    return dark ? NSColor(white: 1, alpha: high ? 0.16 : 0.07) : .white
+    // Con «Reducir transparencia» la tarjeta oscura pasa a ser opaca.
+    let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+    return dark ? (reduce ? NSColor(white: 0.19, alpha: 1) : NSColor(white: 1, alpha: high ? 0.16 : 0.07)) : .white
 }
 
 /// Borde de las tarjetas; más marcado si el usuario pidió aumentar el contraste.

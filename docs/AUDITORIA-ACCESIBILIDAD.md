@@ -207,3 +207,5 @@ Corregidos en la rama `audit/accesibilidad-ux` (PR #20), después de la primera 
 | M5 | Corregido | Los números usan idioma + región del Mac (`es_CL` → «45 %» pasa a «45%» y «11,9 dB»); las capturas fijan la región con `-AppleLocale`. |
 
 Comprobado con `tools/test-a11y.sh` (contraste y árbol AX en 9 estados, al 100 % y 150 %) y `snapshot.sh`; ambos en el CI.
+
+La 1.15 cierra además los tres parciales: **A7** (los avisos del pie duran 5 s y los cambios de estado ya no los pisan), **C7** («Reducir transparencia» usa tarjetas opacas) y **M2** (botón de minimizar visible, Minimizar ⌘M y Zoom en el menú Ventana; la barra de título sigue oculta por diseño).

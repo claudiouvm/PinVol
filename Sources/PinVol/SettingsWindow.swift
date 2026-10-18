@@ -51,6 +51,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private var sized = false
     private var flashItem: DispatchWorkItem?
     private var suppressAnnouncement = false
+    private var flashActive = false
     private var announcedKind: EngineStatus.Kind?
     private var announcedText = ""
     private var announcedUpdateKind: UpdateState.Kind?
@@ -367,7 +368,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
-        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.closeButton)?.setAccessibilityHelp(L("Closes the window; PinVol keeps running in the menu bar"))
         showTab(.apps, animated: false)
     }
@@ -486,7 +486,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         apply(st.summary)
     }
 
-    func apply(_ s: EngineStatus, announceChange: Bool = true) {
+    func apply(_ s: EngineStatus, announceChange: Bool = true, fromFlash: Bool = false) {
+        // Mientras hay un aviso, los cambios de estado no lo pisan: el aviso dura sus 5 segundos.
+        if flashActive && !fromFlash { return }
         statusLabel.stringValue = s.text
         statusLabel.toolTip = s.detail ?? s.text
         statusDot.contentTintColor = statusColor(s.kind)
@@ -502,19 +504,21 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     /// Mensaje breve en el pie; a los 3 s vuelve el estado normal.
     private func flash(_ text: String, kind: EngineStatus.Kind = .warning, detail: String? = nil) {
+        flashActive = true
         suppressAnnouncement = true
-        apply(EngineStatus(kind: kind, text: text, detail: detail))
+        apply(EngineStatus(kind: kind, text: text, detail: detail), fromFlash: true)
         suppressAnnouncement = false
         announce([text, detail].compactMap { $0 }.joined(separator: ". "), priority: kind == .error ? .high : .medium)
         flashItem?.cancel()
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
+            self.flashActive = false
             self.suppressAnnouncement = true
             self.apply(self.backend.state.summary)
             self.suppressAnnouncement = false
         }
         flashItem = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: item)
     }
 
     // MARK: Actualizaciones

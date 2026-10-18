@@ -292,6 +292,9 @@ final class AccessibilitySelfTestDelegate: NSObject, NSApplicationDelegate {
         var problems: [String] = []
         guard let root = window.contentView else { return ["\(context): ventana sin contenido"] }
         if window.initialFirstResponder == nil { problems.append("\(context): sin foco inicial") }
+        if window.standardWindowButton(.miniaturizeButton)?.isHidden ?? true {
+            problems.append("\(context): el botón de minimizar está oculto")
+        }
 
         func walk(_ view: NSView, depth: Int) {
             if !view.isHiddenOrHasHiddenAncestor {
