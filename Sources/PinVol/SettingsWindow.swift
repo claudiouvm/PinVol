@@ -383,6 +383,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         // Mismo esqueleto que Ajustes: la cabecera de la ventana ya muestra el ícono y el nombre; aquí van
         // la versión (en la fila de actualizaciones), la autoría y los enlaces, alineados como el resto.
         let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude ♥"), size: 12, color: .secondaryLabelColor)
+        madeIn.alignment = .center   // esta línea va centrada; el resto de Acerca de sigue alineado a la izquierda
 
         updateButton.bezelStyle = .rounded
         updateButton.controlSize = scaledControlSize(.small)
