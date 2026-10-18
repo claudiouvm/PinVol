@@ -20,7 +20,7 @@ jobs:
   capturas:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Instalar las apps de ejemplo
         env:
@@ -39,7 +39,7 @@ jobs:
       - name: Capturas
         run: ./snapshot.sh build/snapshots
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: capturas-portada
           path: build/snapshots
