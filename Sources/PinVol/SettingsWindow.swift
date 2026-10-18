@@ -28,7 +28,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     private let backend: Backend
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: max(360, scaled(360)), height: 480),
-                          styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+                          styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
                           backing: .buffered, defer: true)
     private let scroll = NSScrollView()
     private let root = NSStackView()
@@ -369,6 +369,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.standardWindowButton(.closeButton)?.setAccessibilityHelp(L("Closes the window; PinVol keeps running in the menu bar"))
+        // Ancho fijo: la ventana se ajusta en alto al contenido y no se redimensiona a mano.
+        window.standardWindowButton(.zoomButton)?.isHidden = true
         showTab(.apps, animated: false)
     }
 

@@ -8,7 +8,7 @@ Keeps the volume of the apps you choose fixed, no matter what the system volume 
 
 - **Messages stay long enough to read.** Footer notices last 5 seconds, and engine status updates no longer replace them.
 - **Reduce Transparency** is supported: the dark cards become opaque.
-- **The window can be minimized** with the standard button or ⌘M, and **Zoom** is in the Window menu.
+- **The window can be minimized** with the standard button or ⌘M. It no longer resizes sideways: the width is fixed (and follows the text size), the height fits the content and scrolls if needed.
 - The permission error explanation has no line limit; it grows instead of being cut off.
 - Everything else stays: menu-bar-only, native buttons, pin apps with ⌘O, remove with ⌫ and undo with ⌘Z, VoiceOver announcements and the high-contrast slider.
 
@@ -28,7 +28,7 @@ Mantiene fijo el volumen de las apps que elijas, sin importar el volumen del sis
 
 - **Los avisos duran lo suficiente para leerlos.** Los mensajes del pie duran 5 segundos y los cambios de estado del motor ya no los reemplazan.
 - **Se admite «Reducir transparencia»:** las tarjetas oscuras pasan a ser opacas.
-- **La ventana se puede minimizar** con el botón estándar o ⌘M, y **Zoom** está en el menú Ventana.
+- **La ventana se puede minimizar** con el botón estándar o ⌘M. Ya no se redimensiona a los lados: el ancho es fijo (y sigue al tamaño del texto), el alto se ajusta al contenido y hace scroll si hace falta.
 - La explicación del error de permiso no tiene límite de líneas; crece en vez de cortarse.
 - Lo demás sigue igual: solo barra de menús, botones nativos, fija apps con ⌘O, quítalas con ⌫ y deshaz con ⌘Z, anuncios de VoiceOver y el slider de alto contraste.
 
