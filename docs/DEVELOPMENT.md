@@ -49,7 +49,7 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 | `Updates.swift` | Latest-release lookup on GitHub (version, `.dmg` and its checksum) |
 | `Installer.swift` | Download and install of a new version (resident instance only) |
 | `Snapshot.swift` | Development only: window screenshots |
-| `SelfTest.swift` | Development only: `--selftest-install`, the update installer test the CI runs |
+| `SelfTest.swift` | Development only: `--selftest-install` (update installer), `--selftest-a11y` and `--selftest-contrast` (accessibility checks the CI runs) |
 
 ## Startup at login
 
@@ -68,6 +68,24 @@ The interface is in English and Spanish and follows the Mac's language: Spanish 
 - To try a language without changing the Mac's, run the binary with `-AppleLanguages "(es)"`, or set it for PinVol only in System Settings → General → Language & Region → Applications.
 - The resident instance writes the status texts, so it keeps the language it started with: after changing the Mac's language, quit PinVol and open it again.
 
+## Accessibility
+
+The window targets **WCAG 2.2 AA** and the macOS HIG:
+
+- Every control has an accessibility name and decorative icons are hidden from VoiceOver. Each app row is a group, and its slider and removal button name the app they belong to.
+- Status is written, not only colored: every row says `Active`, `Waiting…`, `Error`… and an error's explanation is visible, with **Open System Settings** and **Retry**, instead of living in a tooltip.
+- Brief messages (footer, menu bar) are posted as accessibility announcements, so VoiceOver users hear them.
+- Icon-only buttons are at least 24×24 pt (the removal button is 24×24).
+- Text follows the system body size and can be forced with `PV_TEXT_SCALE`; the window is resizable, scrolls when the content does not fit, and skips animations when Reduce Motion is on.
+- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting.
+- Adding apps does not depend on dragging: **Pin App…** (⌘O) opens the standard panel, and **Remove App** (⌫) plus **⌘Z** cover the keyboard.
+
+`tools/test-a11y.sh` builds the `-DSNAPSHOT` variant and runs `--selftest-contrast` (WCAG math on the palette, light and dark) and `--selftest-a11y` (names, decorative images, 24 pt icon-only buttons, initial focus and button titles, at 100 % and 150 % text). The CI runs it. For a visual pass: `PV_TEXT_SCALE=2 ./snapshot.sh` renders the window at 200 %. The VoiceOver pass is manual: walk the window, pin an app with ⌘O, deny the audio permission, remove an app with ⌫ and undo with ⌘Z.
+
+Known limits: the selected tab segment and the slider track are drawn by AppKit with the accent color (≈4.15:1 with the default blue, below 4.5:1 for the 13 pt label); button bezels use the system control sizes, so their labels grow less than the rest of the text.
+
+See [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) for the audit behind this.
+
 ## Commands
 
 | Command | What it does |
@@ -77,6 +95,7 @@ The interface is in English and Spanish and follows the Mac's language: Spanish 
 | `tools/make-dmg.sh` | Builds the arm64 app and produces `dist/PinVol.dmg` (fails if the binary is not arm64-only) |
 | `./snapshot.sh` | Builds a development variant and renders PNG screenshots of the window (light/dark, 1 and 5 apps, every tab) in English and Spanish into `build/snapshots/en` and `build/snapshots/es`, with no screen-recording permission needed |
 | `python3 tools/check-strings.py` | Checks that every interface text has its translation (the CI runs it too; it needs no Mac) |
+| `./tools/test-a11y.sh` | Checks the contrast of the app's palette and the window's accessibility tree (100 % and 150 % text); the CI runs it |
 | `tools/test-install.sh` | Tests the update installer on a real macOS: mounts the freshly built `.dmg` and swaps an older "installed" app (marked with the quarantine flag, as a browser leaves it) for it, checking that the new one does not keep the mark (needs `tools/make-dmg.sh` and the `-DSNAPSHOT` build first; the CI runs it) |
 | `python3 tools/make-icon.py` | Regenerates `Resources/AppIcon.icns` and the menu bar glyphs (`MenuBar*Template*.png`). Everything is drawn in code |
 
@@ -93,7 +112,7 @@ All workflows run on the `macos-26` runner (Apple Silicon, Xcode 26) except the 
 
 | Workflow | When | What it does |
 |---|---|---|
-| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/`, `.md` files or `.github/FUNDING.yml` change) | Checks the translations (`tools/check-strings.py`). Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Tests the update installer (`tools/test-install.sh`). Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
+| `Release` (`release.yml`) | Pull requests and pushes to `main` (skipped if only `dist/`, `docs/`, `.md` files or `.github/FUNDING.yml` change) | Checks the translations (`tools/check-strings.py`). Checks accessibility and contrast (`tools/test-a11y.sh`). Compiles the screenshot variant too, so the `-DSNAPSHOT` code is checked. Builds the arm64 `.dmg` and checks `Info.plist`, the icon, the bundle resources, that the binary is arm64-only and that `RELEASE_NOTES.md` names the version. Tests the update installer (`tools/test-install.sh`). Uploads the `PinVol-dmg` and `capturas` artifacts. On `main` it also commits `dist/PinVol.dmg` (a bot commit marked `[skip ci]`) and creates the release `v<version>` if it does not exist yet. |
 | `Screenshots` (`screenshots.yml`) | Manual, or in a pull request that changes `snapshot.sh` or the workflow itself | Installs Spotify, IINA and TIDAL, takes the screenshots (English and Spanish) and uploads them as `capturas-portada`. The front-page images are `en/light-five.png` and `en/dark-five.png` from that artifact (`docs/apps-claro.png` and `docs/apps-oscuro.png`, for `README.md`) and `es/light-five.png` and `es/dark-five.png` (`docs/apps-claro.es.png` and `docs/apps-oscuro.es.png`, for `README.es.md`). |
 | `Release notes` (`release-notes.yml`, `ubuntu-latest`) | Manual | Copies `RELEASE_NOTES.md` to the release of the version in `Info.plist`. With the `tag` and `notes` inputs (always together) it replaces the notes of another release with the text you pass. |
 

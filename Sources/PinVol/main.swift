@@ -322,12 +322,16 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
 private func makeDelegate() -> NSApplicationDelegate {
     #if SNAPSHOT
+    if CommandLine.arguments.contains("--selftest-a11y") { return AccessibilitySelfTestDelegate() }
     if CommandLine.arguments.contains("--snapshot") { return SnapshotDelegate() }
     #endif
     return CommandLine.arguments.contains("--ui") ? UIDelegate() : ResidentDelegate()
 }
 
 #if SNAPSHOT
+if CommandLine.arguments.contains("--selftest-contrast") {
+    runContrastSelfTest()   // contraste de los colores propios: no abre ninguna ventana
+}
 if let i = CommandLine.arguments.firstIndex(of: "--selftest-install") {
     runInstallSelfTest(Array(CommandLine.arguments[(i + 1)...]))   // prueba del instalador en el CI: no abre ninguna ventana
 }

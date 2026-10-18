@@ -211,6 +211,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private func buildUI() {
         // Cabecera (la pestaña «Acerca de» la reemplaza por un logo grande)
         let appIcon = NSImageView(image: NSApp.applicationIconImage)
+        appIcon.setAccessibilityElement(false)
         appIcon.widthAnchor.constraint(equalToConstant: 48).isActive = true
         appIcon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let titles = NSStackView(views: [
@@ -284,6 +285,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         // Pie: estado + salir
         statusDot.image = symbol("circle.fill", size: scaled(8))
         statusDot.contentTintColor = .tertiaryLabelColor
+        statusDot.setAccessibilityElement(false)
         statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let quit = NSButton(title: L("Quit PinVol"), target: self, action: #selector(quitTapped))
@@ -346,6 +348,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         let channel = (info?["PinVolReleaseChannel"] as? String).map { "\($0) " } ?? ""
 
         let logo = NSImageView(image: NSApp.applicationIconImage)
+        logo.setAccessibilityElement(false)
         logo.imageScaling = .scaleProportionallyUpOrDown
         logo.widthAnchor.constraint(equalToConstant: 112).isActive = true
         logo.heightAnchor.constraint(equalToConstant: 112).isActive = true

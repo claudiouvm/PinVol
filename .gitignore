@@ -2,3 +2,4 @@
 .build-snap/
 build/
 .DS_Store
+.build-a11y/

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 #if SNAPSHOT
@@ -114,5 +115,166 @@ func runInstallSelfTest(_ args: [String]) -> Never {
     try? fm.removeItem(at: work)
     print(failures == 0 ? "OK: todo pasó" : "\(failures) prueba(s) fallaron")
     exit(failures == 0 ? 0 : 1)
+}
+
+// MARK: - Solo desarrollo y CI: contraste y accesibilidad
+//
+// `PinVol --selftest-contrast` resuelve los colores propios en claro y oscuro y aplica la fórmula WCAG.
+// `PinVol --selftest-a11y` construye la ventana en sus estados y comprueba nombres accesibles, imágenes
+// decorativas, tamaños de los botones sin texto y foco inicial. `tools/test-a11y.sh` ejecuta los dos y, además,
+// el segundo con PV_TEXT_SCALE=1.5. Salen con 0 si todo pasa y con 1 si algo falla.
+
+func runContrastSelfTest() -> Never {
+    /// Aplana `color` sobre `background` en la apariencia dada y devuelve el color RGB resultante.
+    /// Se dibuja en un bitmap de 1×1 porque algunos colores del sistema son de escala de grises y
+    /// `redComponent` falla en ellos; así se mide lo que se ve, con su transparencia ya compuesta.
+    func resolved(_ color: NSColor, _ appearance: NSAppearance, over background: NSColor) -> NSColor {
+        var out = background
+        appearance.performAsCurrentDrawingAppearance {
+            guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1, pixelsHigh: 1, bitsPerSample: 8,
+                                             samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                             colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return }
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            background.setFill()
+            NSRect(x: 0, y: 0, width: 1, height: 1).fill()
+            color.setFill()
+            NSRect(x: 0, y: 0, width: 1, height: 1).fill()
+            NSGraphicsContext.restoreGraphicsState()
+            if let c = rep.colorAt(x: 0, y: 0)?.usingColorSpace(.sRGB) { out = c }
+        }
+        return out
+    }
+    func luminance(_ c: NSColor) -> CGFloat {
+        func f(_ v: CGFloat) -> CGFloat { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        return 0.2126 * f(c.redComponent) + 0.7152 * f(c.greenComponent) + 0.0722 * f(c.blueComponent)
+    }
+    func ratio(_ a: NSColor, _ b: NSColor) -> CGFloat {
+        let la = luminance(a), lb = luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
+    var failures = 0
+    func check(_ name: String, _ foreground: NSColor, _ background: NSColor, minimum: CGFloat) {
+        let value = ratio(foreground, background)
+        print("\(name): \(String(format: "%.2f", value)):1 (mínimo \(minimum):1)")
+        if value < minimum {
+            failures += 1
+            print("  FALLA")
+        }
+    }
+
+    // Fondo real de las tarjetas: blanco en claro; en oscuro, el velo blanco al 7 % sobre la ventana.
+    let cases: [(String, NSAppearance, NSColor)] = [
+        ("claro", NSAppearance(named: .aqua)!, NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)),
+        ("oscuro", NSAppearance(named: .darkAqua)!, NSColor(srgbRed: 0.19, green: 0.19, blue: 0.19, alpha: 1)),
+    ]
+    for (appearanceName, appearance, background) in cases {
+        for kind in [EngineStatus.Kind.active, .waiting, .warning, .error] {
+            check("\(appearanceName): estado \(kind.rawValue)",
+                  resolved(PinVolPalette.status(kind), appearance, over: background), background, minimum: 3)
+        }
+        check("\(appearanceName): quitar y borde de la zona de arrastre",
+              resolved(PinVolPalette.controlOutline, appearance, over: background), background, minimum: 3)
+        check("\(appearanceName): texto",
+              resolved(.labelColor, appearance, over: background), background, minimum: 4.5)
+    }
+    print(failures == 0 ? "OK: contraste" : "\(failures) problema(s) de contraste")
+    exit(failures == 0 ? 0 : 1)
+}
+
+final class AccessibilitySelfTestDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ n: Notification) {
+        NSApp.setActivationPolicy(.accessory)
+        DispatchQueue.main.async { [weak self] in self?.run() }
+    }
+
+    private func run() -> Never {
+        var problems: [String] = []
+
+        func makeState(_ apps: [(String, Float, EngineStatus)], update: UpdateState = UpdateState()) -> AppState {
+            var state = AppState()
+            state.apps = apps.map { var app = PinnedApp(id: $0.0, level: $0.1); app.status = $0.2; return app }
+            state.enabled = !apps.isEmpty
+            state.update = update
+            return state
+        }
+
+        let active = EngineStatus.active(gain: 1)
+        let waiting = EngineStatus(kind: .waiting, text: L("Waiting for the app's audio…"))
+        let error = EngineStatus.captureFailed(-1)
+        let five = ["com.apple.Music", "com.apple.Safari", "com.apple.Mail", "com.apple.Notes", "com.apple.Calendar"]
+            .map { ($0, Float(0.5), active) }
+
+        let cases: [(String, AppState, String, NSAppearance)] = [
+            ("vacío", makeState([]), "apps", NSAppearance(named: .aqua)!),
+            ("una app activa", makeState([("com.apple.Music", 0.45, active)]), "apps", NSAppearance(named: .aqua)!),
+            ("una app en espera", makeState([("com.apple.Music", 0.45, waiting)]), "apps", NSAppearance(named: .aqua)!),
+            ("una app con error", makeState([("com.apple.Music", 0.45, error)]), "apps", NSAppearance(named: .aqua)!),
+            ("cinco apps", makeState(five), "apps", NSAppearance(named: .aqua)!),
+            ("ajustes", makeState([]), "settings", NSAppearance(named: .aqua)!),
+            ("acerca de", makeState([]), "about", NSAppearance(named: .aqua)!),
+            ("actualización", makeState([("com.apple.Music", 0.45, active)],
+                                        update: UpdateState(kind: .available, latest: "9.9.9")), "apps",
+             NSAppearance(named: .aqua)!),
+            ("ventana oscura", makeState([("com.apple.Music", 0.45, active)]), "apps", NSAppearance(named: .darkAqua)!),
+        ]
+
+        for (name, state, tab, appearance) in cases {
+            let settings = SettingsWindow(backend: StaticBackend(state: state))
+            settings.select(tab)
+            settings.window.appearance = appearance
+            settings.show()
+            settings.window.layoutIfNeeded()
+            problems += inspect(settings.window, context: name)
+            settings.window.orderOut(nil)
+        }
+
+        if problems.isEmpty {
+            print("OK: accesibilidad (\(cases.count) estados, escala \(String(format: "%.2f", textScale)))")
+            exit(0)
+        }
+        for problem in problems { print("FALLA \(problem)") }
+        print("\(problems.count) problema(s) de accesibilidad")
+        exit(1)
+    }
+
+    private func inspect(_ window: NSWindow, context: String) -> [String] {
+        var problems: [String] = []
+        guard let root = window.contentView else { return ["\(context): ventana sin contenido"] }
+        if window.initialFirstResponder == nil { problems.append("\(context): sin foco inicial") }
+
+        func walk(_ view: NSView, depth: Int) {
+            if !view.isHiddenOrHasHiddenAncestor {
+                let label = (view.accessibilityLabel() ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                if let button = view as? NSButton {
+                    let title = button.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if label.isEmpty && title.isEmpty {
+                        problems.append("\(context): botón sin nombre")
+                    }
+                    // Los botones que son solo un ícono necesitan un objetivo de 24×24 pt como mínimo.
+                    if title.isEmpty && (button.frame.width < 24 || button.frame.height < 24) {
+                        problems.append("\(context): botón sin texto de \(Int(button.frame.width))×\(Int(button.frame.height)) pt")
+                    }
+                    if !title.isEmpty && button.intrinsicContentSize.width > button.frame.width + 2 {
+                        problems.append("\(context): botón recortado «\(title)»")
+                    }
+                } else if let slider = view as? NSSlider {
+                    if label.isEmpty { problems.append("\(context): slider sin nombre") }
+                } else if let toggle = view as? NSSwitch {
+                    if label.isEmpty { problems.append("\(context): interruptor sin nombre") }
+                } else if let image = view as? NSImageView {
+                    if image.isAccessibilityElement() && label.isEmpty {
+                        problems.append("\(context): imagen sin descripción")
+                    }
+                } else if let progress = view as? NSProgressIndicator {
+                    if label.isEmpty { problems.append("\(context): progreso sin nombre") }
+                }
+            }
+            view.subviews.forEach { walk($0, depth: depth + 1) }
+        }
+        walk(root, depth: 0)
+        return problems
+    }
 }
 #endif

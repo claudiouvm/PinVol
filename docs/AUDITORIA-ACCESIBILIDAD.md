@@ -1,6 +1,8 @@
 # PinVol — Auditoría de accesibilidad y UX
 
 > **English summary.** Audit of PinVol 1.9 (`7fd184c`) against WCAG 2.2 AA and the macOS HIG. The app looks and feels right with a mouse, but it does not meet WCAG 2.2 AA: 50 findings (4 blocking, 15 high, 22 medium, 9 low). The core task — adding an app and setting its level — cannot be completed with a keyboard alone or with VoiceOver, and several hand-drawn elements fail the 3:1 non-text contrast threshold (measured: remove button 1.88:1, drop border 1.88:1, status dots 2.22–2.31:1). This document lists the evidence and the remediation plan; it is a working document in Spanish, not mirrored in English.
+>
+> **Estado.** Este documento describe el estado auditado en `7fd184c`. Las correcciones están en la rama `audit/accesibilidad-ux`; las comprobaciones automáticas que las cubren son `tools/test-a11y.sh`.
 
 > **Alcance.** Código de la interfaz, textos, recursos y documentación. Fuera de alcance: motor de audio, instalador, cadena de release y README (solo su reflejo en la UI).
 > **Base:** `main` en `7fd184c`, versión 1.9. **Fecha:** 18 de octubre de 2026.

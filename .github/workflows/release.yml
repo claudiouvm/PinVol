@@ -39,6 +39,10 @@ jobs:
       - name: Compilar la variante de capturas
         run: swift build -c release -Xswiftc -DSNAPSHOT --scratch-path .build-snap
 
+      # Contraste de la paleta (WCAG) y árbol de accesibilidad de la ventana, también con el texto al 150 %.
+      - name: Comprobar accesibilidad y contraste
+        run: ./tools/test-a11y.sh
+
       - name: Compilar y empaquetar el .dmg
         run: tools/make-dmg.sh
 

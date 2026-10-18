@@ -49,7 +49,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 | `Updates.swift` | Consulta de la última release en GitHub (versión, `.dmg` y su huella) |
 | `Installer.swift` | Descarga e instalación de una versión nueva (solo la instancia residente) |
 | `Snapshot.swift` | Solo desarrollo: capturas de la ventana |
-| `SelfTest.swift` | Solo desarrollo: `--selftest-install`, la prueba del instalador de actualizaciones que ejecuta el CI |
+| `SelfTest.swift` | Solo desarrollo: `--selftest-install` (instalador de actualizaciones), `--selftest-a11y` y `--selftest-contrast` (accesibilidad, que ejecuta el CI) |
 
 ## Inicio al encender el Mac
 
@@ -68,6 +68,24 @@ La interfaz está en inglés y en español y sigue el idioma del Mac: en españo
 - Para probar un idioma sin cambiar el del Mac, ejecuta el binario con `-AppleLanguages "(es)"`, o ponlo solo para PinVol en Ajustes del Sistema → General → Idioma y región → Aplicaciones.
 - La instancia residente escribe los textos de estado, así que conserva el idioma con el que arrancó: tras cambiar el idioma del Mac, cierra PinVol y ábrela de nuevo.
 
+## Accesibilidad
+
+La ventana apunta a **WCAG 2.2 AA** y a las HIG de macOS:
+
+- Cada control tiene nombre accesible y los íconos decorativos quedan ocultos para VoiceOver. Cada fila de app es un grupo, y su slider y su botón de quitar nombran la app a la que pertenecen.
+- El estado se escribe, no solo se colorea: cada fila dice `Activo`, `En espera…`, `Error`… y la explicación de un error es visible, con **Abrir Ajustes del Sistema** y **Reintentar**, en lugar de vivir en un tooltip.
+- Los mensajes breves (pie y barra de menús) se publican como anuncios de accesibilidad: quien usa VoiceOver los oye.
+- Los botones que son solo un ícono miden al menos 24×24 pt (el de quitar, 24×24).
+- El texto sigue el tamaño de cuerpo del sistema y se puede forzar con `PV_TEXT_SCALE`; la ventana se redimensiona, hace scroll si el contenido no cabe y omite las animaciones con «Reducir movimiento».
+- Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste.
+- Añadir apps no depende de arrastrar: **Fijar app…** (⌘O) abre el panel del sistema, y **Quitar app** (⌫) con **⌘Z** cubren el teclado.
+
+`tools/test-a11y.sh` compila la variante `-DSNAPSHOT` y ejecuta `--selftest-contrast` (fórmula WCAG sobre la paleta, claro y oscuro) y `--selftest-a11y` (nombres, imágenes decorativas, botones de solo ícono de 24 pt, foco inicial y títulos de botones, con el texto al 100 % y al 150 %). El CI lo ejecuta. Para una pasada visual: `PV_TEXT_SCALE=2 ./snapshot.sh` genera la ventana al 200 %. La pasada con VoiceOver es manual: recorre la ventana, fija una app con ⌘O, deniega el permiso de audio, quita una app con ⌫ y deshaz con ⌘Z.
+
+Límites conocidos: el segmento seleccionado de las pestañas y el track del slider los dibuja AppKit con el color de acento (≈4,15:1 con el azul por omisión, por debajo de 4,5:1 para la etiqueta de 13 pt); los biseles de los botones usan los tamaños de control del sistema, así que su texto crece menos que el resto.
+
+Ver [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) para la auditoría que dio origen a esto.
+
 ## Comandos
 
 | Comando | Qué hace |
@@ -77,6 +95,7 @@ La interfaz está en inglés y en español y sigue el idioma del Mac: en españo
 | `tools/make-dmg.sh` | Compila la app arm64 y genera `dist/PinVol.dmg` (falla si el binario no es solo arm64) |
 | `./snapshot.sh` | Compila una variante de desarrollo y genera capturas PNG de la ventana (claro/oscuro, 1 y 5 apps, cada pestaña) en inglés y en español, en `build/snapshots/en` y `build/snapshots/es`, sin necesitar permiso de grabación de pantalla |
 | `python3 tools/check-strings.py` | Comprueba que cada texto de la interfaz tenga su traducción (el CI también lo ejecuta; no necesita un Mac) |
+| `./tools/test-a11y.sh` | Comprueba el contraste de la paleta y el árbol de accesibilidad de la ventana (texto al 100 % y 150 %); el CI lo ejecuta |
 | `tools/test-install.sh` | Prueba el instalador de actualizaciones en un macOS de verdad: monta el `.dmg` recién generado y cambia por él una app «instalada» más vieja (con la marca de cuarentena, como la deja un navegador), y comprueba que la nueva no conserva la marca (hay que ejecutar antes `tools/make-dmg.sh` y la compilación `-DSNAPSHOT`; el CI lo ejecuta) |
 | `python3 tools/make-icon.py` | Regenera `Resources/AppIcon.icns` y los glifos de la barra de menús (`MenuBar*Template*.png`). Todo está dibujado en código |
 
@@ -93,7 +112,7 @@ Todos los workflows corren en el runner `macos-26` (Apple Silicon, Xcode 26) sal
 
 | Workflow | Cuándo | Qué hace |
 |---|---|---|
-| `Release` (`release.yml`) | Pull requests y pushes a `main` (se omite si solo cambian `dist/`, `docs/`, archivos `.md` o `.github/FUNDING.yml`) | Comprueba las traducciones (`tools/check-strings.py`). Compila también la variante de capturas, para comprobar el código de `-DSNAPSHOT`. Genera el `.dmg` arm64 y comprueba `Info.plist`, el ícono, los recursos del paquete, que el binario sea solo arm64 y que `RELEASE_NOTES.md` nombre la versión. Prueba el instalador de actualizaciones (`tools/test-install.sh`). Sube los artefactos `PinVol-dmg` y `capturas`. En `main` además commitea `dist/PinVol.dmg` (un commit del bot marcado `[skip ci]`) y crea la release `v<versión>` si todavía no existe. |
+| `Release` (`release.yml`) | Pull requests y pushes a `main` (se omite si solo cambian `dist/`, `docs/`, archivos `.md` o `.github/FUNDING.yml`) | Comprueba las traducciones (`tools/check-strings.py`). Comprueba accesibilidad y contraste (`tools/test-a11y.sh`). Compila también la variante de capturas, para comprobar el código de `-DSNAPSHOT`. Genera el `.dmg` arm64 y comprueba `Info.plist`, el ícono, los recursos del paquete, que el binario sea solo arm64 y que `RELEASE_NOTES.md` nombre la versión. Prueba el instalador de actualizaciones (`tools/test-install.sh`). Sube los artefactos `PinVol-dmg` y `capturas`. En `main` además commitea `dist/PinVol.dmg` (un commit del bot marcado `[skip ci]`) y crea la release `v<versión>` si todavía no existe. |
 | `Screenshots` (`screenshots.yml`) | A mano, o en un pull request que cambie `snapshot.sh` o el propio workflow | Instala Spotify, IINA y TIDAL, toma las capturas (en inglés y en español) y las sube como `capturas-portada`. Las imágenes de la portada son `en/light-five.png` y `en/dark-five.png` de ese artefacto (`docs/apps-claro.png` y `docs/apps-oscuro.png`, para `README.md`) y `es/light-five.png` y `es/dark-five.png` (`docs/apps-claro.es.png` y `docs/apps-oscuro.es.png`, para `README.es.md`). |
 | `Release notes` (`release-notes.yml`, `ubuntu-latest`) | A mano | Copia `RELEASE_NOTES.md` a la release de la versión de `Info.plist`. Con las entradas `tag` y `notes` (siempre juntas) reemplaza en cambio las notas de otra release con el texto que le pases. |
 
