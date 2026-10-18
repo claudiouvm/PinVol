@@ -25,8 +25,6 @@ final class StaticBackend: Backend {
     func retry(_ id: String) {}
     func setLevel(_ id: String, _ v: Float) {}
     func setEnabled(_ on: Bool) {}
-    func setShowDock(_ on: Bool) {}
-    func setShowMenuBar(_ on: Bool) {}
     func setCheckUpdates(_ on: Bool) {}
     func checkForUpdates() {}
     func downloadUpdate() {}

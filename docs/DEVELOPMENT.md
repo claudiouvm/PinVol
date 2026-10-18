@@ -24,7 +24,7 @@ The important detail is how decibels are measured. The standard scalar→dB conv
 
 PinVol runs as **two instances of the same app**:
 
-- **Resident**: Dock and menu bar, audio engines and saved settings. Always alive.
+- **Resident**: menu bar, audio engines and saved settings. Always alive.
 - **Interface** (`--ui`): shows the window and quits when it is closed.
 
 They talk through `DistributedNotificationCenter`. The reason is memory: opening a window makes AppKit reserve about 8 MB to draw it, plus 5–7 MB for the native switches and slider, and the system does not give them back when you close the window. With the window in another process, that memory is released on close. With the window closed the resident process uses about 15–20 MB; while it is open, the interface instance adds about 22–25 MB. These figures were measured on the original single-app version and have not been measured again with five apps or on macOS 26.
@@ -37,7 +37,7 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 
 | File | Contents |
 |---|---|
-| `main.swift` | Resident instance (Dock, menu bar) and startup |
+| `main.swift` | Resident instance (menu bar) and startup |
 | `UIDelegate.swift` | Interface instance (`--ui`) and the main menu |
 | `Controller.swift` | Saved state, one `Engine` per app, interface messages and the update check |
 | `Audio.swift` | Core Audio: tap, aggregate device, gain, system volume |
@@ -53,7 +53,7 @@ The code lives in `Sources/PinVol/`, split by responsibility:
 
 ## Startup at login
 
-When "Open at login" launches PinVol (for instance when the Mac is turned on) and at least one app is already pinned (`Controller.isConfigured`), the resident instance goes straight to the menu bar, or to the Dock if the menu bar icon is off, and does not open the window. When the user opens the app, or while nothing is pinned yet, the window opens as usual.
+When "Open at login" launches PinVol (for instance when the Mac is turned on) and at least one app is already pinned (`Controller.isConfigured`), the resident instance goes straight to the menu bar and does not open the window. When the user opens the app, or while nothing is pinned yet, the window opens as usual.
 
 macOS marks a login-item launch in the open-application Apple event, but not always, so there is a fallback: a start a few seconds after the user's session began (the start time of their `loginwindow` process) counts as a login start too: within a minute when "Open at login" is on, within 25 seconds otherwise, so that a manual launch right after logging in is not mistaken for it. If the session cannot be found, only a Mac turned on less than two minutes ago counts, and only with "Open at login" on. A reopen event in the first 10 seconds is ignored for the same reason. The decision is logged: `log show --last 10m --predicate 'subsystem == "com.claudiouvm.pinvol"'`.
 
@@ -77,14 +77,14 @@ The window targets **WCAG 2.2 AA** and the macOS HIG:
 - Brief messages (footer, menu bar) are posted as accessibility announcements, so VoiceOver users hear them.
 - Icon-only buttons are at least 24×24 pt (the removal button is 24×24).
 - The window is sized to the tallest tab (Apps, Settings or About), so switching tabs does not resize it; a flexible spacer keeps the footer at the bottom and About uses the same header and left alignment as the rest.
-- **⌥⌘P** opens or raises the window from any app. The window runs in a separate process without a Dock tile; ⌘Tab shows the resident when **Show in the Dock** is on.
+- **⌥⌘P** opens or raises the window from any app. PinVol is a menu-bar app: it has no Dock icon and does not appear in ⌘Tab.
 - Text follows the system body size and can be forced with `PV_TEXT_SCALE`; the window is resizable, scrolls when the content does not fit, and skips animations when Reduce Motion is on.
 - Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting. The tab bar is custom (`TabBar`) so the selected label guarantees 4.5:1, which the system segmented control does not allow. The slider uses `ContrastSliderCell` (track and knob ≥3:1) and action buttons use `PillButton`, whose bezel grows with the text.
 - Adding apps does not depend on dragging: **Pin App…** (⌘O) opens the standard panel, and **Remove App** (⌫) plus **⌘Z** cover the keyboard.
 
 `tools/test-a11y.sh` builds the `-DSNAPSHOT` variant and runs `--selftest-contrast` (WCAG math on the palette, light and dark) and `--selftest-a11y` (names, decorative images, 24 pt icon-only buttons, initial focus and button titles, at 100 % and 150 % text). The CI runs it. For a visual pass: `PV_TEXT_SCALE=2 ./snapshot.sh` renders the window at 200 %.
 
-Known limits: the window runs in a separate process. ⌘Tab lists the resident (when **Show in the Dock** is on), and choosing it opens or raises the window; with the Dock icon off, use ⌥⌘P or the menu bar. The interface process itself has no Dock tile.
+Known limits: PinVol is a menu-bar app by design. It has no Dock icon or ⌘Tab entry; open the window from the menu bar icon or with ⌥⌘P. The interface runs in a separate process and quits when the window closes.
 
 See [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) for the audit behind this.
 

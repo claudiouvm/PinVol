@@ -30,8 +30,6 @@
 "That app is already in the list" = "Esa app ya está en la lista";
 
 /* Pestaña Ajustes */
-"Show in the Dock" = "Mostrar en el Dock";
-"Show in the menu bar" = "Mostrar en la barra de menús";
 "Open at login" = "Abrir al iniciar sesión";
 "Check for updates" = "Buscar actualizaciones";
 "Checks GitHub once a day" = "Consulta GitHub una vez al día";
@@ -110,7 +108,6 @@
 "The app isn't open" = "La app no está abierta";
 "PinVol will start controlling it when you open it." = "PinVol empezará a controlarla cuando la abras.";
 "%@ · %ld waiting" = "%@ · %ld en espera";
-"At least one of the Dock and the menu bar must stay on" = "Al menos el Dock o la barra de menús deben quedar activados";
 "Each app stays at its own level" = "Cada app se queda en su propio nivel";
 "Closes the window; PinVol keeps running in the menu bar" = "Cierra la ventana; PinVol sigue activo en la barra de menús";
 "Made in Chile by Claudiouvm and Claude ♥" = "Hecho en Chile por Claudiouvm y Claude ♥";

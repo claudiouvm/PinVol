@@ -24,7 +24,7 @@ El detalle importante está en cómo se miden los decibeles. La conversión est�
 
 PinVol corre como **dos instancias de la misma app**:
 
-- **Residente**: Dock y barra de menús, motores de audio y ajustes guardados. Siempre viva.
+- **Residente**: barra de menús, motores de audio y ajustes guardados. Siempre viva.
 - **Interfaz** (`--ui`): muestra la ventana y termina al cerrarla.
 
 Se comunican con `DistributedNotificationCenter`. La razón es la memoria: abrir una ventana hace que AppKit reserve unos 8 MB para dibujarla, más 5–7 MB por los interruptores y el slider nativos, y el sistema no los devuelve aunque cierres la ventana. Con la ventana en otro proceso, esa memoria se libera al cerrarla. Con la ventana cerrada, el proceso residente ocupa unos 15–20 MB; mientras está abierta, la instancia de interfaz suma unos 22–25 MB más. Estas cifras se midieron con la versión original, de una sola app, y no se han vuelto a medir con cinco apps ni en macOS 26.
@@ -37,7 +37,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 
 | Archivo | Contenido |
 |---|---|
-| `main.swift` | Instancia residente (Dock, barra de menús) y arranque |
+| `main.swift` | Instancia residente (barra de menús) y arranque |
 | `UIDelegate.swift` | Instancia de interfaz (`--ui`) y menú principal |
 | `Controller.swift` | Estado guardado, un `Engine` por app, mensajes de la interfaz y comprobación de versión |
 | `Audio.swift` | Core Audio: tap, dispositivo agregado, ganancia, volumen del sistema |
@@ -53,7 +53,7 @@ El código está en `Sources/PinVol/`, repartido por responsabilidad:
 
 ## Inicio al encender el Mac
 
-Cuando «Abrir al iniciar sesión» abre PinVol (por ejemplo al encender el Mac) y ya hay al menos una app fijada (`Controller.isConfigured`), la instancia residente pasa directo a la barra de menús, o al Dock si el ícono de la barra está desactivado, y no abre la ventana. Si el usuario abre la app, o mientras no haya nada fijado, la ventana se abre como siempre.
+Cuando «Abrir al iniciar sesión» abre PinVol (por ejemplo al encender el Mac) y ya hay al menos una app fijada (`Controller.isConfigured`), la instancia residente pasa directo a la barra de menús y no abre la ventana. Si el usuario abre la app, o mientras no haya nada fijado, la ventana se abre como siempre.
 
 macOS marca en el evento de apertura que la app se abrió como elemento de inicio de sesión, pero no siempre, así que hay un respaldo: un arranque pocos segundos después de que empezara la sesión del usuario (la hora de arranque de su proceso `loginwindow`) también cuenta como arranque de inicio: dentro del primer minuto con «Abrir al iniciar sesión» activado, y de 25 segundos si no, para no confundirlo con una apertura manual justo después de iniciar sesión. Si no se encuentra la sesión, solo cuenta un Mac encendido hace menos de dos minutos, y solo con «Abrir al iniciar sesión» activado. Por lo mismo, se ignora un aviso de reapertura en los primeros 10 segundos. La decisión queda en el registro: `log show --last 10m --predicate 'subsystem == "com.claudiouvm.pinvol"'`.
 
@@ -77,14 +77,14 @@ La ventana apunta a **WCAG 2.2 AA** y a las HIG de macOS:
 - Los mensajes breves (pie y barra de menús) se publican como anuncios de accesibilidad: quien usa VoiceOver los oye.
 - Los botones que son solo un ícono miden al menos 24×24 pt (el de quitar, 24×24).
 - La ventana se dimensiona con la pestaña más alta (Apps, Ajustes o Acerca de), así que cambiar de pestaña no la redimensiona; un separador flexible mantiene el pie abajo y Acerca de usa la misma cabecera y alineación izquierda que el resto.
-- **⌥⌘P** abre o trae la ventana desde cualquier app. La ventana corre en un proceso aparte sin ícono en el Dock; ⌘Tab muestra la residente cuando **Mostrar en el Dock** está activo.
+- **⌥⌘P** abre o trae la ventana desde cualquier app. PinVol es una app de barra de menús: no tiene ícono en el Dock ni aparece en ⌘Tab.
 - El texto sigue el tamaño de cuerpo del sistema y se puede forzar con `PV_TEXT_SCALE`; la ventana se redimensiona, hace scroll si el contenido no cabe y omite las animaciones con «Reducir movimiento».
 - Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste. La barra de pestañas es propia (`TabBar`) para que la etiqueta seleccionada garantice 4,5:1, algo que el control segmentado del sistema no permite. El slider usa `ContrastSliderCell` (track y knob ≥3:1) y los botones de acción usan `PillButton`, cuyo bisel crece con el texto.
 - Añadir apps no depende de arrastrar: **Fijar app…** (⌘O) abre el panel del sistema, y **Quitar app** (⌫) con **⌘Z** cubren el teclado.
 
 `tools/test-a11y.sh` compila la variante `-DSNAPSHOT` y ejecuta `--selftest-contrast` (fórmula WCAG sobre la paleta, claro y oscuro) y `--selftest-a11y` (nombres, imágenes decorativas, botones de solo ícono de 24 pt, foco inicial y títulos de botones, con el texto al 100 % y al 150 %). El CI lo ejecuta. Para una pasada visual: `PV_TEXT_SCALE=2 ./snapshot.sh` genera la ventana al 200 %.
 
-Límites conocidos: la ventana corre en un proceso aparte. ⌘Tab muestra la residente (con **Mostrar en el Dock** activo) y al elegirla se abre o se trae la ventana; con el ícono del Dock apagado, se entra con ⌥⌘P o desde la barra. El proceso de interfaz no tiene ícono propio.
+Límites conocidos: PinVol es una app de barra de menús por diseño. No tiene ícono en el Dock ni entrada en ⌘Tab; la ventana se abre desde el ícono de la barra o con ⌥⌘P. La interfaz corre en un proceso aparte y termina al cerrar la ventana.
 
 Ver [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) para la auditoría que dio origen a esto.
 

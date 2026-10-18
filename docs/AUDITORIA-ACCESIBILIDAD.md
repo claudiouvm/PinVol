@@ -203,7 +203,7 @@ Corregidos en la rama `audit/accesibilidad-ux` (PR #20), después de la primera 
 | A6 | Corregido | Cualquier archivo se acepta al arrastrar; si no es una app, la ventana lo dice («Solo se pueden fijar apps (.app)») en vez de vetar el arrastre en silencio. |
 | V10 | Corregido | El enlace de GitHub lleva subrayado y rótulo accesible, no solo color. |
 | C6 | Corregido | `NSSegmentedControl` se sustituyó por una barra propia (`TabBar`) porque el control del sistema no permite cambiar el color del segmento; el acento se oscurece hasta 4,5:1 (medido: 4,67:1). |
-| U9 | Mitigado | La ventana no aparece en ⌘Tab (es otro proceso), pero la app sí a través de la residente cuando «Mostrar en el Dock» está activo: elegirla abre o trae la ventana. Con el ícono del Dock apagado, ⌥⌘P la abre desde cualquier app. |
+| U9 | Resuelto por diseño | PinVol es una app de barra de menús: no tiene ícono en el Dock ni entrada en ⌘Tab. La ventana se abre desde el ícono de la barra o con ⌥⌘P. |
 | M5 | Corregido | Los números usan idioma + región del Mac (`es_CL` → «45 %» pasa a «45%» y «11,9 dB»); las capturas fijan la región con `-AppleLocale`. |
 
 Comprobado con `tools/test-a11y.sh` (contraste y árbol AX en 9 estados, al 100 % y 150 %) y `snapshot.sh`; ambos en el CI.

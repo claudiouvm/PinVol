@@ -40,8 +40,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private let aboutPage = NSStackView()
     private let panel = AppsPanel()
     private let enableSwitch = NSSwitch()
-    private let dockSwitch = NSSwitch()
-    private let menuBarSwitch = NSSwitch()
     private let loginSwitch = NSSwitch()
     private let updatesSwitch = NSSwitch()
     private let updateDetail = makeLabel("", size: 11, color: .secondaryLabelColor)
@@ -270,17 +268,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
         // Interruptores
         for (sw, title, action) in [(enableSwitch, L("Keep levels fixed"), #selector(enabledChanged)),
-                                    (dockSwitch, L("Show in the Dock"), #selector(dockChanged)),
-                                    (menuBarSwitch, L("Show in the menu bar"), #selector(menuBarChanged)),
                                     (loginSwitch, L("Open at login"), #selector(loginChanged)),
                                     (updatesSwitch, L("Check for updates"), #selector(updatesChanged))] {
             sw.target = self
             sw.action = action
             sw.setAccessibilityLabel(title)
         }
-        let oneOn = L("At least one of the Dock and the menu bar must stay on")
-        dockSwitch.setAccessibilityHelp(oneOn)
-        menuBarSwitch.setAccessibilityHelp(oneOn)
 
         // Pestaña Apps
         panel.onDrop = { [weak self] urls in self?.dropped(urls) }
@@ -296,8 +289,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
         // Pestaña Ajustes
         let presence = Card(rows: [
-            formRow(L("Show in the Dock"), control: dockSwitch),
-            formRow(L("Show in the menu bar"), control: menuBarSwitch),
             formRow(L("Open at login"), control: loginSwitch),
         ])
         let updates = Card(rows: [
@@ -477,11 +468,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         let st = backend.state
         panel.update(apps: st.apps, full: true)
         enableSwitch.state = st.enabled ? .on : .off
-        dockSwitch.state = st.showDock ? .on : .off
-        menuBarSwitch.state = st.showMenuBar ? .on : .off
-        // La última vía de acceso no se puede apagar: se deshabilita el interruptor en vez de revertirlo en silencio.
-        dockSwitch.isEnabled = st.showMenuBar || !st.showDock
-        menuBarSwitch.isEnabled = st.showDock || !st.showMenuBar
         updatesSwitch.state = st.checkUpdates ? .on : .off
         loginSwitch.state = SMAppService.mainApp.status == .enabled ? .on : .off
         applyUpdate(st.update)
@@ -740,8 +726,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     @objc private func enabledChanged() { backend.setEnabled(enableSwitch.state == .on) }
-    @objc private func dockChanged() { backend.setShowDock(dockSwitch.state == .on) }
-    @objc private func menuBarChanged() { backend.setShowMenuBar(menuBarSwitch.state == .on) }
     @objc private func updatesChanged() { backend.setCheckUpdates(updatesSwitch.state == .on) }
 
     @objc private func quitTapped() {

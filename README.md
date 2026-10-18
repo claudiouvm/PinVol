@@ -51,7 +51,7 @@
 |---|---|
 | **Fixed level per app** | Each pinned app keeps its own level, on the same scale as the system volume. |
 | **Drag and drop** | Drop one or several `.app` files; the window grows and shrinks with them. |
-| **Menu bar and Dock** | Open it from either one. Set to open at login, it goes straight to the menu bar, without the window, once you have apps pinned. |
+| **Menu bar** | Open it from the menu bar icon or press ⌥⌘P. Set to open at login, it goes straight to the menu bar, without the window, once you have apps pinned. |
 | **Light and dark** | Native controls that follow your appearance. |
 | **English and Spanish** | The interface follows your Mac's language: Spanish if your Mac is set to Spanish, English otherwise. |
 | **Updates** | Tells you when a new version is out and, when you ask, downloads and installs it. You can check any time from the menu bar icon. It never installs anything by itself. |

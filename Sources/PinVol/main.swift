@@ -35,16 +35,17 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         show.target = self
         installMainMenu(quitAction: #selector(NSApplication.terminate(_:)), quitTitle: L("Quit PinVol"), extra: [show])
         model.onStatus = { [weak self] in self?.statusChanged() }
-        model.onPresence = { [weak self] in self?.applyPresence() }
         model.onShow = { [weak self] in self?.showWindow() }
         model.onUpdateNote = { [weak self] in self?.showUpdateResult($0) }
         model.onInstalled = { [weak self] in self?.relaunch() }
         model.start()
-        applyPresence()
+        // PinVol es una app de barra de menús: sin ícono en el Dock ni entrada en ⌘Tab.
+        NSApp.setActivationPolicy(.accessory)
+        buildStatusItem()
         registerGlobalShortcut()
         #if SNAPSHOT
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            devLog("residente: dock=\(self?.model.showDock ?? false) barra=\(self?.statusItem != nil) política=\(NSApp.activationPolicy().rawValue)")
+            devLog("residente: barra=\(self?.statusItem != nil) política=\(NSApp.activationPolicy().rawValue)")
         }
         #endif
         // Al encender el Mac y abrirse sola (con «Abrir al iniciar sesión»), si ya hay apps fijadas pasa directo a la barra de
@@ -119,18 +120,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         InstallEventHandler(GetApplicationEventTarget(), handler, 1, &spec, context, &hotKeyHandler)
     }
 
-    // MARK: Presencia: Dock y barra de menús
-
-    /// El Dock es la vía de acceso fiable; la barra de menús depende de que macOS tenga sitio y la deje verse.
-    private func applyPresence() {
-        NSApp.setActivationPolicy(model.showDock ? .regular : .accessory)
-        if model.showMenuBar {
-            if statusItem == nil { buildStatusItem() }
-        } else if let item = statusItem {
-            NSStatusBar.system.removeStatusItem(item)
-            statusItem = nil
-        }
-    }
+    // MARK: Barra de menús
 
     private func buildStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -165,15 +155,9 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // MARK: Menús (barra de menús y Dock)
+    // MARK: Menú de la barra de menús
 
     func menuNeedsUpdate(_ menu: NSMenu) { fill(menu, forMenuBar: true) }
-
-    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
-        let m = NSMenu()
-        fill(m, forMenuBar: false)   // el Dock añade "Salir" por su cuenta
-        return m
-    }
 
     /// El menú de la barra lleva además «Acerca de PinVol», «Buscar actualizaciones…» y «Salir»; el del Dock no.
     private func fill(_ menu: NSMenu, forMenuBar: Bool) {

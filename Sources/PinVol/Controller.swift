@@ -8,8 +8,6 @@ final class Controller {
     private var engines: [String: Engine] = [:]
     private(set) var apps: [PinnedApp] = []
     private(set) var enabled: Bool
-    private(set) var showDock: Bool
-    private(set) var showMenuBar: Bool
     private(set) var checkUpdates: Bool
     private(set) var update = UpdateState()
     private var uiActive = false
@@ -19,7 +17,6 @@ final class Controller {
     private var broadcastFull = false
     private var downloadedDMG: URL?
     var onStatus: (() -> Void)?
-    var onPresence: (() -> Void)?
     var onShow: (() -> Void)?
     /// Se llama con el estado de la actualización cuando el usuario espera un resultado: al terminar una búsqueda que pidió
     /// (no las diarias), al terminar de descargar y cuando falla una descarga o una instalación.
@@ -31,8 +28,6 @@ final class Controller {
         var s = AppState()
         s.apps = apps
         s.enabled = enabled
-        s.showDock = showDock
-        s.showMenuBar = showMenuBar
         s.checkUpdates = checkUpdates
         s.update = update
         return s
@@ -47,8 +42,6 @@ final class Controller {
         self.defaults = defaults
         apps = Controller.loadApps(defaults)
         enabled = defaults.bool(forKey: "enabled")
-        showDock = defaults.object(forKey: "showDock") as? Bool ?? true
-        showMenuBar = defaults.object(forKey: "showMenuBar") as? Bool ?? true
         checkUpdates = defaults.object(forKey: "checkUpdates") as? Bool ?? true
         observer = IPCObserver(IPC.toResident) { [weak self] in self?.handle($0) }
     }
@@ -118,8 +111,6 @@ final class Controller {
         case "retry": if let id = m["id"] as? String { retry(id) }
         case "level": if let id = m["id"] as? String, let v = m["value"] as? Double { setLevel(id, Float(v)) }
         case "enabled": if let v = m["value"] as? Bool { setEnabled(v) }
-        case "dock": if let v = m["value"] as? Bool { setShowDock(v) }
-        case "menubar": if let v = m["value"] as? Bool { setShowMenuBar(v) }
         case "updates": if let v = m["value"] as? Bool { setCheckUpdates(v) }
         case "checkUpdates": checkForUpdates(manual: true)
         case "downloadUpdate": downloadUpdate()
@@ -198,25 +189,6 @@ final class Controller {
         enabled = on
         defaults.set(on, forKey: "enabled")
         for e in engines.values { e.enabled = on }
-        broadcast(full: true)
-    }
-
-    // Siempre debe quedar al menos una vía de acceso (Dock o barra de menús); si no, la app sería inalcanzable.
-    private func setShowDock(_ on: Bool) {
-        if on || showMenuBar {
-            showDock = on
-            defaults.set(on, forKey: "showDock")
-            onPresence?()
-        }
-        broadcast(full: true)
-    }
-
-    private func setShowMenuBar(_ on: Bool) {
-        if on || showDock {
-            showMenuBar = on
-            defaults.set(on, forKey: "showMenuBar")
-            onPresence?()
-        }
         broadcast(full: true)
     }
 

@@ -77,8 +77,6 @@ struct UpdateState {
 struct AppState {
     var apps: [PinnedApp] = []
     var enabled = false
-    var showDock = true
-    var showMenuBar = true
     var checkUpdates = true
     var update = UpdateState()
 
@@ -87,14 +85,12 @@ struct AppState {
     init(_ d: [AnyHashable: Any]) {
         apps = (d["apps"] as? [[String: Any]] ?? []).compactMap { PinnedApp($0) }
         enabled = d["enabled"] as? Bool ?? false
-        showDock = d["showDock"] as? Bool ?? true
-        showMenuBar = d["showMenuBar"] as? Bool ?? true
         checkUpdates = d["checkUpdates"] as? Bool ?? true
         update = UpdateState(d["update"] as? [String: Any] ?? [:])
     }
 
     func dictionary(full: Bool) -> [String: Any] {
-        ["apps": apps.map { $0.dictionary }, "enabled": enabled, "showDock": showDock, "showMenuBar": showMenuBar,
+        ["apps": apps.map { $0.dictionary }, "enabled": enabled,
          "checkUpdates": checkUpdates, "update": update.dictionary, "full": full]
     }
 
@@ -153,8 +149,6 @@ protocol Backend: AnyObject {
     func retry(_ id: String)
     func setLevel(_ id: String, _ v: Float)
     func setEnabled(_ on: Bool)
-    func setShowDock(_ on: Bool)
-    func setShowMenuBar(_ on: Bool)
     func setCheckUpdates(_ on: Bool)
     func checkForUpdates()
     func downloadUpdate()
@@ -207,8 +201,6 @@ final class RemoteBackend: Backend {
         IPC.post(IPC.toResident, ["op": "level", "id": id, "value": Double(v)])
     }
     func setEnabled(_ on: Bool) { state.enabled = on; IPC.post(IPC.toResident, ["op": "enabled", "value": on]) }
-    func setShowDock(_ on: Bool) { IPC.post(IPC.toResident, ["op": "dock", "value": on]) }
-    func setShowMenuBar(_ on: Bool) { IPC.post(IPC.toResident, ["op": "menubar", "value": on]) }
     func setCheckUpdates(_ on: Bool) { state.checkUpdates = on; IPC.post(IPC.toResident, ["op": "updates", "value": on]) }
     func checkForUpdates() {
         state.update = UpdateState(kind: .checking)

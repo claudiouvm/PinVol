@@ -51,7 +51,7 @@
 |---|---|
 | **Nivel fijo por app** | Cada app fijada conserva su propio nivel, en la misma escala que el volumen del sistema. |
 | **Arrastrar y soltar** | Suelta uno o varios `.app`; la ventana crece y se encoge con ellos. |
-| **Barra de menús y Dock** | Ábrela desde cualquiera de los dos. Si la abres al iniciar sesión, pasa directo a la barra de menús, sin la ventana, cuando ya tienes apps fijadas. |
+| **Barra de menús** | Ábrela desde el ícono de la barra o pulsa ⌥⌘P. Si la abres al iniciar sesión, pasa directo a la barra de menús, sin la ventana, cuando ya tienes apps fijadas. |
 | **Claro y oscuro** | Controles nativos que siguen tu apariencia. |
 | **Español e inglés** | La interfaz sigue el idioma de tu Mac: en español si tu Mac está en español, y en inglés en cualquier otro caso. |
 | **Actualizaciones** | Te avisa cuando sale una versión nueva y, cuando lo pides, la descarga y la instala. Puedes buscarla cuando quieras desde el ícono de la barra de menús. Nunca instala nada por su cuenta. |
