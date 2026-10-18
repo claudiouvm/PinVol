@@ -24,7 +24,7 @@ final class DropCard: NSView {
     init() {
         super.init(frame: .zero)
 
-        let icon = NSImageView(image: symbol("arrow.down.app", size: 38, weight: .light) ?? NSImage())
+        let icon = NSImageView(image: symbol("arrow.down.app", size: scaled(38), weight: .light) ?? NSImage())
         icon.contentTintColor = .secondaryLabelColor
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.setAccessibilityElement(false)
@@ -36,7 +36,7 @@ final class DropCard: NSView {
         addButton.target = self
         addButton.action = #selector(addTapped)
         addButton.bezelStyle = .rounded
-        addButton.controlSize = .small
+        addButton.controlSize = scaledControlSize(.small)
         addButton.setAccessibilityHelp(L("Opens a panel to choose the app whose volume you want to keep fixed"))
 
         for v in [icon, title, caption, addButton] { bigStack.addArrangedSubview(v) }
@@ -49,10 +49,10 @@ final class DropCard: NSView {
         compactButton.target = self
         compactButton.action = #selector(addTapped)
         compactButton.isBordered = false
-        compactButton.image = symbol("plus.circle", size: 14, weight: .regular)
+        compactButton.image = symbol("plus.circle", size: scaled(14), weight: .regular)
         compactButton.imagePosition = .imageLeading
         compactButton.contentTintColor = .secondaryLabelColor
-        compactButton.font = .systemFont(ofSize: 12)
+        compactButton.font = scaledFont(12)
         compactButton.setAccessibilityHelp(L("Opens a panel to choose the app whose volume you want to keep fixed"))
 
         for v in [bigStack, compactButton] {
@@ -65,8 +65,8 @@ final class DropCard: NSView {
                 v.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -14),
             ])
         }
-        icon.widthAnchor.constraint(equalToConstant: 56).isActive = true
-        icon.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        icon.widthAnchor.constraint(equalToConstant: scaled(56)).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: scaled(56)).isActive = true
         heightConstraint = heightAnchor.constraint(equalToConstant: 140)
         heightConstraint.isActive = true
         configure(count: 0)
@@ -77,7 +77,7 @@ final class DropCard: NSView {
         compact = count > 0
         bigStack.isHidden = compact
         compactButton.isHidden = !compact
-        heightConstraint.constant = compact ? 44 : 140
+        heightConstraint.constant = compact ? max(44, scaled(44)) : max(140, scaled(140))
         compactButton.title = L("Add another app… · %ld of %ld", count, maxPinnedApps)
         toolTip = L("Drop the .app whose volume you want to keep fixed (up to %ld apps)", maxPinnedApps)
         isHidden = count >= maxPinnedApps
@@ -97,8 +97,8 @@ final class DropCard: NSView {
             NSColor.controlAccentColor.withAlphaComponent(0.12).setFill()
             path.fill()
         }
-        (highlighted ? NSColor.controlAccentColor : NSColor.tertiaryLabelColor).setStroke()
-        path.lineWidth = highlighted ? 2 : 1
+        (highlighted ? NSColor.controlAccentColor : PinVolPalette.controlOutline).setStroke()
+        path.lineWidth = highlighted ? 2 : 1.5
         path.setLineDash([6, 4], count: 2, phase: 0)
         path.stroke()
     }
@@ -115,7 +115,7 @@ final class AppRow: NSView {
     var onOpenSettings: (() -> Void)?
     private let appName: String
     private let nameLabel = makeLabel("", size: 13, weight: .medium)
-    private let dot = NSImageView(image: symbol("circle.fill", size: 7) ?? NSImage())
+    private let dot = NSImageView(image: symbol("circle.fill", size: scaled(7)) ?? NSImage())
     private let caption = makeLabel("", size: 11, color: .secondaryLabelColor)
     private let slider = NSSlider(value: 0.5, minValue: 0, maxValue: 1, target: nil, action: nil)
     private let percent = makeLabel("", size: 11, color: .secondaryLabelColor)
@@ -137,8 +137,9 @@ final class AppRow: NSView {
 
         let icon = NSImageView(image: info.icon)
         icon.imageScaling = .scaleProportionallyUpOrDown
-        icon.widthAnchor.constraint(equalToConstant: 32).isActive = true
-        icon.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        let iconSide = max(32, scaled(32))
+        icon.widthAnchor.constraint(equalToConstant: iconSide).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: iconSide).isActive = true
         icon.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         icon.setAccessibilityElement(false)
 
@@ -156,13 +157,13 @@ final class AppRow: NSView {
         slider.target = self
         slider.action = #selector(sliderMoved)
         slider.isContinuous = true
-        slider.controlSize = .small
+        slider.controlSize = .regular
         slider.setAccessibilityLabel(L("Fixed level for %@", appName))
         slider.setAccessibilityHelp(L("The volume %@ will play at, on the same scale as the system volume", appName))
         slider.toolTip = L("The volume %@ will play at, on the same scale as the system volume", appName)
-        percent.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+        percent.font = scaledMonospacedDigitFont(11)
         percent.alignment = .right
-        percent.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        percent.widthAnchor.constraint(greaterThanOrEqualToConstant: scaled(36)).isActive = true
         percent.setContentHuggingPriority(.required, for: .horizontal)
         percent.setAccessibilityElement(false)   // el slider ya anuncia su valor: no duplicarlo
         let bottom = NSStackView(views: [slider, percent])
@@ -176,7 +177,7 @@ final class AppRow: NSView {
         detailLabel.setAccessibilityElement(false)
         for b in [fixButton, retryButton] {
             b.bezelStyle = .rounded
-            b.controlSize = .small
+            b.controlSize = scaledControlSize(.small)
         }
         fixButton.target = self
         fixButton.action = #selector(openSettingsTapped)
@@ -205,21 +206,22 @@ final class AppRow: NSView {
         bottom.widthAnchor.constraint(equalTo: mid.widthAnchor).isActive = true
         detailBox.widthAnchor.constraint(equalTo: mid.widthAnchor).isActive = true
 
-        removeButton.image = symbol("xmark.circle.fill", size: 14) ?? NSImage()
+        removeButton.image = symbol("xmark.circle.fill", size: scaled(14)) ?? NSImage()
         removeButton.isBordered = false
-        removeButton.contentTintColor = .tertiaryLabelColor
+        removeButton.contentTintColor = PinVolPalette.controlOutline
         removeButton.toolTip = L("Stop controlling %@", appName)
         removeButton.setAccessibilityLabel(L("Remove %@", appName))
         removeButton.target = self
         removeButton.action = #selector(removeTapped)
         removeButton.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-        removeButton.widthAnchor.constraint(equalToConstant: 24).isActive = true
-        removeButton.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        let removeSide = max(24, scaled(24))
+        removeButton.widthAnchor.constraint(equalToConstant: removeSide).isActive = true
+        removeButton.heightAnchor.constraint(equalToConstant: removeSide).isActive = true
 
         for v in [icon, mid, removeButton] { rowStack.addArrangedSubview(v) }
         rowStack.alignment = .centerY
         rowStack.spacing = 10
-        rowStack.edgeInsets = NSEdgeInsets(top: 10, left: 14, bottom: 10, right: 10)
+        rowStack.edgeInsets = NSEdgeInsets(top: scaled(10), left: scaled(14), bottom: scaled(10), right: scaled(10))
         rowStack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(rowStack)
         NSLayoutConstraint.activate([

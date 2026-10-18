@@ -1,16 +1,89 @@
 import AppKit
 
-// MARK: - Estilo
+// MARK: - Escala de texto
+//
+// macOS no agranda por su cuenta el texto de una app que usa tamaños fijos. Este factor sigue el tamaño
+// de cuerpo preferido por el sistema y se puede forzar en las capturas y en las pruebas (PV_TEXT_SCALE).
+
+private let systemTextScale: CGFloat = {
+    let body = NSFont.preferredFont(forTextStyle: .body).pointSize
+    return max(1, body / 13)
+}()
+
+let textScale: CGFloat = {
+    let env = ProcessInfo.processInfo.environment["PV_TEXT_SCALE"].flatMap(Double.init).map { CGFloat($0) } ?? 1
+    return max(0.8, min(env, 3)) * systemTextScale
+}()
+
+func scaled(_ value: CGFloat) -> CGFloat { (value * textScale).rounded() }
+
+func scaledFont(_ size: CGFloat, weight: NSFont.Weight = .regular) -> NSFont {
+    .systemFont(ofSize: scaled(size), weight: weight)
+}
+
+func scaledMonospacedDigitFont(_ size: CGFloat) -> NSFont {
+    .monospacedDigitSystemFont(ofSize: scaled(size), weight: .regular)
+}
+
+/// Los botones con bisel no escalan su fuente: se agranda el tamaño de control cuando el texto crece.
+func scaledControlSize(_ size: NSControl.ControlSize) -> NSControl.ControlSize {
+    switch textScale {
+    case 1.6...: return .large
+    case 1.15...: return .regular
+    default: return size
+    }
+}
+
+// MARK: - Paleta
+
+/// Colores propios con contraste comprobado. Los del sistema (texto, separadores) se adaptan solos;
+/// los que dibuja la app se resuelven aquí para poder medirlos en las pruebas de accesibilidad.
+enum PinVolPalette {
+    /// Verde, naranja y rojo con al menos 3:1 sobre la tarjeta blanca (WCAG 1.4.11), y sus versiones en modo oscuro.
+    static let activeLight = NSColor(srgbRed: 0.09, green: 0.47, blue: 0.22, alpha: 1)
+    static let waitingLight = NSColor(srgbRed: 0.64, green: 0.35, blue: 0.00, alpha: 1)
+    static let errorLight = NSColor(srgbRed: 0.76, green: 0.18, blue: 0.16, alpha: 1)
+    static let activeDark = NSColor(calibratedRed: 0.19, green: 0.82, blue: 0.35, alpha: 1)
+    static let waitingDark = NSColor(calibratedRed: 1.00, green: 0.62, blue: 0.04, alpha: 1)
+    static let errorDark = NSColor(calibratedRed: 1.00, green: 0.27, blue: 0.23, alpha: 1)
+
+    static func status(_ kind: EngineStatus.Kind, dark: Bool) -> NSColor {
+        switch kind {
+        case .idle: return dark ? NSColor(white: 0.62, alpha: 1) : NSColor(white: 0.42, alpha: 1)
+        case .waiting, .warning: return dark ? waitingDark : waitingLight
+        case .active: return dark ? activeDark : activeLight
+        case .error: return dark ? errorDark : errorLight
+        }
+    }
+
+    static func status(_ kind: EngineStatus.Kind) -> NSColor {
+        NSColor(name: nil) { appearance in
+            status(kind, dark: appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
+        }
+    }
+
+    /// El `×` y el borde de la zona de arrastre no son decorativos: usan el color de etiqueta secundaria,
+    /// que ronda 10:1 en ambos modos y se refuerza con «Aumentar contraste».
+    static var controlOutline: NSColor { .secondaryLabelColor }
+}
 
 /// Relleno de las tarjetas: blanco en claro, velo translúcido en oscuro (como Ajustes del Sistema).
+/// Con «Aumentar contraste» el velo es más opaco.
 let cardFill = NSColor(name: nil) { appearance in
-    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(white: 1, alpha: 0.07) : .white
+    let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    let high = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+    return dark ? NSColor(white: 1, alpha: high ? 0.16 : 0.07) : .white
+}
+
+/// Borde de las tarjetas; más marcado si el usuario pidió aumentar el contraste.
+func cardStrokeColor() -> NSColor {
+    NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? .tertiaryLabelColor : .separatorColor
 }
 
 func makeLabel(_ text: String = "", size: CGFloat = 13, weight: NSFont.Weight = .regular,
                color: NSColor = .labelColor) -> NSTextField {
     let l = NSTextField(labelWithString: text)
-    l.font = .systemFont(ofSize: size, weight: weight)
+    l.font = scaledFont(size, weight: weight)
     l.textColor = color
     l.lineBreakMode = .byTruncatingTail
     return l
@@ -44,14 +117,7 @@ func spacer() -> NSView {
 }
 
 /// Color del punto de estado según el tipo de estado del motor.
-func statusColor(_ kind: EngineStatus.Kind) -> NSColor {
-    switch kind {
-    case .idle: return .tertiaryLabelColor
-    case .waiting, .warning: return .systemOrange
-    case .active: return .systemGreen
-    case .error: return .systemRed
-    }
-}
+func statusColor(_ kind: EngineStatus.Kind) -> NSColor { PinVolPalette.status(kind) }
 
 /// Nombre e ícono de una app a partir de su identificador de bundle.
 func appLookup(_ id: String) -> (name: String, icon: NSImage) {
@@ -71,7 +137,8 @@ final class Separator: NSView {
     override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: 1) }
     override func draw(_ dirtyRect: NSRect) {
         NSColor.separatorColor.setFill()
-        NSRect(x: 14, y: 0, width: max(bounds.width - 14, 0), height: 0.5).fill()
+        let x = 14 * textScale
+        NSRect(x: x, y: 0, width: max(bounds.width - x, 0), height: 0.5).fill()
     }
 }
 
@@ -116,7 +183,7 @@ final class Card: NSView {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
         cardFill.setFill()
         path.fill()
-        NSColor.separatorColor.setStroke()
+        cardStrokeColor().setStroke()
         path.lineWidth = 1
         path.stroke()
     }
@@ -149,7 +216,7 @@ func formRow(_ title: String, detailLabel: NSTextField?, control: NSView) -> NSV
         control.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -14),
         control.centerYAnchor.constraint(equalTo: row.centerYAnchor),
         left.trailingAnchor.constraint(lessThanOrEqualTo: control.leadingAnchor, constant: -10),
-        row.heightAnchor.constraint(equalToConstant: detailLabel == nil ? 44 : 54),
+        row.heightAnchor.constraint(equalToConstant: scaled(detailLabel == nil ? 44 : 54)),
     ])
     return row
 }

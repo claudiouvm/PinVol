@@ -9,7 +9,8 @@ import UniformTypeIdentifiers
 
 final class SettingsWindow: NSObject, NSWindowDelegate {
     private static let positionKey = "windowTopLeft"
-    private static let width: CGFloat = 360
+    private static let minWidth: CGFloat = 360
+    private static let maxWidth: CGFloat = 900
     /// Página de Ko-fi a la que lleva el botón «Buy me a coffee!» de Acerca de (se abre en el navegador).
     static let donateURL = URL(string: "https://ko-fi.com/claudiouvm")!
 
@@ -25,9 +26,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private let backend: Backend
-    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 360, height: 480),
-                          styleMask: [.titled, .closable, .fullSizeContentView],
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: max(360, scaled(360)), height: 480),
+                          styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
                           backing: .buffered, defer: true)
+    private let scroll = NSScrollView()
     private let root = NSStackView()
     private let header = NSStackView()
     private let updateBanner = NSButton()
@@ -55,6 +57,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private var announcedUpdateKind: UpdateState.Kind?
     private var resizeTimer: Timer?
     private var resizeTarget: CGFloat = 0
+    private var fittingWindow = false
     private static let resizeDuration: TimeInterval = 0.25
     var onClose: (() -> Void)?
 
@@ -65,12 +68,17 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         sync()
         // El tamaño final se fija antes de colocar la ventana (ver restorePosition).
         root.layoutSubtreeIfNeeded()
-        window.setContentSize(root.fittingSize)
+        window.setContentSize(NSSize(width: max(Self.minWidth, scaled(Self.minWidth)), height: root.fittingSize.height))
         sized = true
         restorePosition()
         window.delegate = self
         backend.onState = { [weak self] state, full in
             if full { self?.sync() } else { self?.applyStatuses(state) }
+        }
+        NotificationCenter.default.addObserver(forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+                                               object: nil, queue: .main) { [weak self] _ in
+            self?.window.contentView?.needsDisplay = true
+            self?.sync()
         }
     }
 
@@ -101,6 +109,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     func windowDidMove(_ notification: Notification) { if resizeTimer == nil { savePosition() } }
 
+    /// Al cambiar el ancho, el contenido cambia de alto: la ventana se reajusta (el alto lo decide el contenido).
+    func windowDidResize(_ notification: Notification) {
+        guard sized, !fittingWindow else { return }
+        fitWindow(animated: false)
+    }
+
     // MARK: Posición y tamaño
 
     /// Se guarda la esquina superior izquierda: no depende de la altura de la ventana.
@@ -126,12 +140,23 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     /// AppKit agrandaría la ventana de golpe, sin animación. Por eso `root` cuelga de un contenedor sin restricción inferior.
     private var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
 
+    /// Alto máximo de la ventana: el contenido que no quepa se desplaza dentro de la ventana.
+    private var maxWindowHeight: CGFloat {
+        #if SNAPSHOT
+        if let v = ProcessInfo.processInfo.environment["PV_MAX_HEIGHT"].flatMap(Double.init) { return CGFloat(v) }
+        #endif
+        return max(320, (window.screen?.visibleFrame.height ?? 900) - 24)
+    }
+
     /// Ajusta la altura de la ventana al contenido actual, manteniendo fija su esquina superior izquierda.
     /// Siempre con la misma animación (duración y curva); sin ella si el usuario pidió reducir el movimiento.
     private func fitWindow(animated: Bool) {
         guard sized, let content = window.contentView else { return }
         root.layoutSubtreeIfNeeded()
-        let target = root.fittingSize.height + (window.frame.height - content.frame.height)
+        let chrome = window.frame.height - content.frame.height
+        let desired = root.fittingSize.height + chrome
+        let target = min(desired, maxWindowHeight)
+        scroll.hasVerticalScroller = desired > maxWindowHeight + 0.5
         if resizeTimer != nil, abs(target - resizeTarget) < 0.5 { return }   // ya va hacia ahí
         resizeTimer?.invalidate()
         resizeTimer = nil
@@ -156,10 +181,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private func setWindowHeight(_ h: CGFloat) {
+        fittingWindow = true
         var f = window.frame
         f.origin.y = f.maxY - h
         f.size.height = h
         window.setFrame(f, display: true)
+        fittingWindow = false
     }
 
     // MARK: Interfaz
@@ -194,8 +221,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
         // Aviso de versión nueva
         updateBanner.bezelStyle = .rounded
-        updateBanner.controlSize = .small
-        updateBanner.image = symbol("arrow.down.circle.fill", size: 12)
+        updateBanner.controlSize = scaledControlSize(.small)
+        updateBanner.image = symbol("arrow.down.circle.fill", size: scaled(12))
         updateBanner.imagePosition = .imageLeading
         updateBanner.target = self
         updateBanner.action = #selector(updateAction)
@@ -205,6 +232,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         tabs.target = self
         tabs.action = #selector(tabChanged)
         tabs.segmentDistribution = .fillEqually
+        tabs.font = scaledFont(13)
         tabs.selectedSegment = Tab.apps.rawValue
 
         // Interruptores
@@ -245,13 +273,13 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         buildAbout()
 
         // Pie: estado + salir
-        statusDot.image = symbol("circle.fill", size: 8)
+        statusDot.image = symbol("circle.fill", size: scaled(8))
         statusDot.contentTintColor = .tertiaryLabelColor
         statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let quit = NSButton(title: L("Quit"), target: self, action: #selector(quitTapped))
         quit.bezelStyle = .rounded
-        quit.controlSize = .small
+        quit.controlSize = scaledControlSize(.small)
         quit.toolTip = L("Quits PinVol completely: the app stops controlling the volume")
         let footer = NSStackView(views: [statusDot, statusLabel, spacer(), quit])
         footer.alignment = .centerY
@@ -267,23 +295,38 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         root.setCustomSpacing(18, after: header)
         root.edgeInsets = NSEdgeInsets(top: 44, left: 20, bottom: 18, right: 20)
         for v in sections { v.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -40).isActive = true }
-        root.widthAnchor.constraint(equalToConstant: SettingsWindow.width).isActive = true
 
         let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
         root.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(root)
         NSLayoutConstraint.activate([
             root.topAnchor.constraint(equalTo: container.topAnchor),
             root.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            root.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            root.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
-        window.contentView = container
+        scroll.drawsBackground = false
+        scroll.hasVerticalScroller = true
+        scroll.hasHorizontalScroller = false
+        scroll.autohidesScrollers = true
+        scroll.scrollerStyle = .overlay
+        scroll.documentView = container
+        window.contentView = scroll
+        NSLayoutConstraint.activate([
+            container.leadingAnchor.constraint(equalTo: scroll.contentView.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: scroll.contentView.trailingAnchor),
+            container.topAnchor.constraint(equalTo: scroll.contentView.topAnchor),
+            container.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor),
+        ])
         window.title = "PinVol"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        window.standardWindowButton(.zoomButton)?.isHidden = true
+        window.contentMinSize = NSSize(width: Self.minWidth, height: 240)
+        window.contentMaxSize = NSSize(width: Self.maxWidth, height: 3000)
         showTab(.apps, animated: false)
     }
 
@@ -301,7 +344,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude <3"), size: 12)
 
         updateButton.bezelStyle = .rounded
-        updateButton.controlSize = .small
+        updateButton.controlSize = scaledControlSize(.small)
         updateButton.target = self
         updateButton.action = #selector(updateAction)
         updateDetail.lineBreakMode = .byTruncatingTail
@@ -310,11 +353,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         let github = NSButton(title: L("Source code on GitHub"), target: self, action: #selector(openGitHub))
         github.isBordered = false
         github.contentTintColor = .linkColor
-        github.font = .systemFont(ofSize: 12)
+        github.font = scaledFont(12)
 
-        let coffee = NSButton(title: L("Buy me a coffee!"), image: symbol("cup.and.saucer.fill", size: 12) ?? NSImage(),
+        let coffee = NSButton(title: L("Buy me a coffee!"), image: symbol("cup.and.saucer.fill", size: scaled(12)) ?? NSImage(),
                               target: self, action: #selector(openDonate))
         coffee.bezelStyle = .rounded
+        coffee.controlSize = scaledControlSize(.regular)
         coffee.imagePosition = .imageLeading
         coffee.toolTip = L("Support PinVol on Ko-fi")
 
