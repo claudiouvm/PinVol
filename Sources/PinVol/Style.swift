@@ -28,8 +28,8 @@ func scaledMonospacedDigitFont(_ size: CGFloat) -> NSFont {
 /// Los botones con bisel no escalan su fuente: se agranda el tamaño de control cuando el texto crece.
 func scaledControlSize(_ size: NSControl.ControlSize) -> NSControl.ControlSize {
     switch textScale {
-    case 1.6...: return .large
-    case 1.15...: return .regular
+    case 1.45...: return .large
+    case 1.1...: return .regular
     default: return size
     }
 }

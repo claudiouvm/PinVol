@@ -112,7 +112,8 @@ final class Controller {
         switch m["op"] as? String {
         case "hello": uiActive = true; broadcast(full: true)
         case "bye": uiActive = false
-        case "assign": if let id = m["id"] as? String { assign(id) }
+        case "assign":
+            if let id = m["id"] as? String { assign(id, level: (m["level"] as? Double).map(Float.init)) }
         case "remove": if let id = m["id"] as? String { remove(id) }
         case "retry": if let id = m["id"] as? String { retry(id) }
         case "level": if let id = m["id"] as? String, let v = m["value"] as? Double { setLevel(id, Float(v)) }
@@ -146,11 +147,19 @@ final class Controller {
 
     // MARK: Acciones
 
-    /// Añade una app. Su nivel inicial es el volumen actual del sistema.
-    private func assign(_ id: String) {
+    /// Añade una app. Su nivel inicial es el que tenía antes de quitarla o, si no, el volumen actual del sistema.
+    private func assign(_ id: String, level requested: Float? = nil) {
         guard apps.count < maxPinnedApps, !apps.contains(where: { $0.id == id }) else { return broadcast(full: true) }
         var level: Float = 0.5
-        if let dev = defaultOutputDevice(), let m = MasterVolume(device: dev) { level = m.scalar }
+        if let requested {
+            level = requested
+        } else {
+            if let dev = defaultOutputDevice(), let m = MasterVolume(device: dev) { level = m.scalar }
+            if level < 0.01 { level = 0.5 }   // con el Mac en silencio, no crear un pin inaudible
+            if let saved = defaults.dictionary(forKey: "removedLevels") as? [String: Double], let v = saved[id] {
+                level = Float(v)
+            }
+        }
         let app = PinnedApp(id: id, level: level)
         apps.append(app)
         makeEngine(for: app)
@@ -160,7 +169,13 @@ final class Controller {
     }
 
     /// Deja de controlar la app: se destruye su tap y su audio vuelve a sonar normal.
+    /// Se guarda su nivel para restaurarlo al volver a añadirla.
     private func remove(_ id: String) {
+        if let app = apps.first(where: { $0.id == id }) {
+            var saved = defaults.dictionary(forKey: "removedLevels") as? [String: Double] ?? [:]
+            saved[id] = Double(app.level)
+            defaults.set(saved, forKey: "removedLevels")
+        }
         engines[id] = nil
         apps.removeAll { $0.id == id }
         refreshExclusions()

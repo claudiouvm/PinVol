@@ -105,11 +105,13 @@ struct AppState {
         let all = apps.map { $0.status }
         if let e = all.first(where: { $0.kind == .error }) { return e }
         let warning = all.filter { $0.kind == .warning }.count
+        let waiting = all.filter { $0.kind == .waiting }.count
         let engaged = all.filter { $0.kind == .active }.count + warning
         guard engaged > 0 else { return all[0] }
+        let base = warning > 0 ? L("Active · %ld of %ld apps · at the limit", engaged, apps.count)
+                               : L("Active · %ld of %ld apps", engaged, apps.count)
         return EngineStatus(kind: warning > 0 ? .warning : .active,
-                            text: warning > 0 ? L("Active · %ld of %ld apps · at the limit", engaged, apps.count)
-                                              : L("Active · %ld of %ld apps", engaged, apps.count))
+                            text: waiting > 0 ? L("%@ · %ld waiting", base, waiting) : base)
     }
 }
 
@@ -146,7 +148,7 @@ final class IPCObserver: NSObject {
 protocol Backend: AnyObject {
     var state: AppState { get }
     var onState: ((AppState, Bool) -> Void)? { get set }   // (estado, ¿completo?)
-    func assign(_ id: String)
+    func assign(_ id: String, level: Float?)
     func remove(_ id: String)
     func retry(_ id: String)
     func setLevel(_ id: String, _ v: Float)
@@ -190,7 +192,11 @@ final class RemoteBackend: Backend {
 
     func connect() { IPC.post(IPC.toResident, ["op": "hello"]) }
     func disconnect() { IPC.post(IPC.toResident, ["op": "bye"]) }
-    func assign(_ id: String) { IPC.post(IPC.toResident, ["op": "assign", "id": id]) }
+    func assign(_ id: String, level: Float?) {
+        var message: [String: Any] = ["op": "assign", "id": id]
+        if let level { message["level"] = Double(level) }
+        IPC.post(IPC.toResident, message)
+    }
     func remove(_ id: String) {
         state.apps.removeAll { $0.id == id }
         IPC.post(IPC.toResident, ["op": "remove", "id": id])

@@ -12,11 +12,7 @@
 /* Pestaña Apps */
 "Drop an app here" = "Arrastra una app aquí";
 "Its volume will stay fixed · up to %ld apps" = "Su volumen quedará fijo · hasta %ld apps";
-"Add App…" = "Añadir app…";
-"Add another app… · %ld of %ld" = "Añadir otra app… · %ld de %ld";
 "Opens a panel to choose the app whose volume you want to keep fixed" = "Abre un panel para elegir la app cuyo volumen quieres mantener fijo";
-"Add" = "Añadir";
-"Choose the app whose volume you want to keep fixed" = "Elige la app cuyo volumen quieres mantener fijo";
 "Drop the .app whose volume you want to keep fixed (up to %ld apps)" = "Suelta aquí el archivo .app cuyo volumen quieres mantener fijo (hasta %ld apps)";
 "Fixed level for %@" = "Nivel fijo de %@";
 "The volume %@ will play at, on the same scale as the system volume" = "Volumen al que sonará %@, en la misma escala que el volumen del sistema";
@@ -29,7 +25,6 @@
 "Retry %@" = "Reintentar %@";
 "Couldn't capture the audio" = "No se pudo capturar el audio";
 "Keep levels fixed" = "Mantener nivel fijo";
-"Offsets your Mac's system volume" = "Compensa el volumen general del Mac";
 "Maximum %ld apps: remove one to add another" = "Máximo %ld apps: quita una para añadir otra";
 "Couldn't read that app" = "No se pudo leer esa app";
 "That app is already in the list" = "Esa app ya está en la lista";
@@ -43,7 +38,6 @@
 "Couldn't change the login setting" = "No se pudo cambiar el inicio de sesión";
 
 /* Pestaña Acerca de y actualizaciones */
-"Made in Chile by Claudiouvm and Claude <3" = "Hecho en Chile por Claudiouvm y Claude <3";
 "Version %@" = "Versión %@";
 "Updates" = "Actualizaciones";
 "Check" = "Buscar";
@@ -81,7 +75,6 @@
 "Unexpected response from GitHub" = "Respuesta inesperada de GitHub";
 
 /* Pie de la ventana */
-"Quit" = "Salir";
 "Quits PinVol completely: the app stops controlling the volume" = "Cierra PinVol por completo: la app deja de controlar el volumen";
 
 /* Estado del motor */
@@ -102,6 +95,44 @@
 "About PinVol" = "Acerca de PinVol";
 "Check for updates…" = "Buscar actualizaciones…";
 "Quit PinVol" = "Salir de PinVol";
-"Download PinVol %@…" = "Descargar PinVol %@…";
+"Download PinVol %@" = "Descargar PinVol %@";
 "Window" = "Ventana";
 "Close" = "Cerrar";
+"Pin another app… · %ld of %ld" = "Fijar otra app… · %ld de %ld";
+"Pin" = "Fijar";
+"Choose the app to pin" = "Elige la app que quieres fijar";
+"At 0 % this app is silent" = "Al 0 % esta app no suena";
+"Off" = "Desactivado";
+"Waiting…" = "En espera…";
+"Active" = "Activo";
+"At the limit" = "Al límite";
+"Error" = "Error";
+"The app isn't open" = "La app no está abierta";
+"PinVol will start controlling it when you open it." = "PinVol empezará a controlarla cuando la abras.";
+"%@ · %ld waiting" = "%@ · %ld en espera";
+"At least one of the Dock and the menu bar must stay on" = "Al menos el Dock o la barra de menús deben quedar activados";
+"Each app stays at its own level" = "Cada app se queda en su propio nivel";
+"Closes the window; PinVol keeps running in the menu bar" = "Cierra la ventana; PinVol sigue activo en la barra de menús";
+"Made in Chile by Claudiouvm and Claude ♥" = "Hecho en Chile por Claudiouvm y Claude ♥";
+"Download progress" = "Progreso de la descarga";
+"Couldn't update" = "No se pudo actualizar";
+"OK" = "OK";
+"Update to %@" = "Actualizar a %@";
+"Install %@" = "Instalar %@";
+"Fixed levels are on now" = "Los niveles fijos se han activado";
+"App added back" = "App añadida de nuevo";
+"Quit PinVol?" = "¿Salir de PinVol?";
+"The apps you pinned will follow the Mac's volume again." = "Las apps fijadas volverán a seguir el volumen del Mac.";
+"Cancel" = "Cancelar";
+"Settings…" = "Ajustes…";
+"Pin App…" = "Fijar app…";
+"Hide PinVol" = "Ocultar PinVol";
+"Hide Others" = "Ocultar otros";
+"Show All" = "Mostrar todo";
+"Edit" = "Edición";
+"Undo Remove App" = "Deshacer quitar app";
+"View" = "Visualización";
+"Bring All to Front" = "Traer todo al frente";
+"Help" = "Ayuda";
+"PinVol Help" = "Ayuda de PinVol";
+"Lower the Mac's volume: this app stays the same." = "Baja el volumen del Mac: esta app sigue igual.";

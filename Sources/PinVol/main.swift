@@ -168,7 +168,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let latest = model.update.latest ?? ""
         switch model.update.kind {
         case .available:
-            let item = NSMenuItem(title: L("Download PinVol %@…", latest), action: #selector(downloadUpdate), keyEquivalent: "")
+            let item = NSMenuItem(title: L("Download PinVol %@", latest), action: #selector(downloadUpdate), keyEquivalent: "")
             item.target = self
             menu.addItem(item)
         case .downloading:
@@ -184,6 +184,11 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if forMenuBar { menu.addItem(NSMenuItem(title: L("Checking…"), action: nil, keyEquivalent: "")) }
         default:
             if forMenuBar {
+                if let note = lastUpdateNote {
+                    let result = NSMenuItem(title: note, action: nil, keyEquivalent: "")
+                    result.isEnabled = false
+                    menu.addItem(result)
+                }
                 let check = NSMenuItem(title: L("Check for updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
                 check.target = self
                 menu.addItem(check)
@@ -196,18 +201,14 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func dot(_ kind: EngineStatus.Kind) -> NSImage? {
-        let color: NSColor
-        switch kind {
-        case .idle: color = .tertiaryLabelColor
-        case .waiting, .warning: color = .systemOrange
-        case .active: color = .systemGreen
-        case .error: color = .systemRed
-        }
-        let cfg = NSImage.SymbolConfiguration(pointSize: 8, weight: .regular).applying(.init(paletteColors: [color]))
+        let cfg = NSImage.SymbolConfiguration(pointSize: 8, weight: .regular)
+            .applying(.init(paletteColors: [PinVolPalette.status(kind)]))
         return NSImage(systemSymbolName: "circle.fill", accessibilityDescription: nil)?.withSymbolConfiguration(cfg)
     }
 
     @objc private func toggleEnabled() { model.setEnabled(!model.enabled) }
+
+    private var lastUpdateNote: String?
 
     @objc private func downloadUpdate() {
         model.downloadUpdate()
@@ -243,13 +244,17 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func showUpdateResult(_ u: UpdateState) {
         let latest = u.latest ?? ""
+        let note: String?
         switch u.kind {
-        case .available: noteInMenuBar(u.message == nil ? L("New version %@", latest) : L("Couldn't download"))
-        case .ready: noteInMenuBar(u.message == nil ? L("Ready to install · %@", latest) : L("Couldn't install"))
-        case .upToDate: noteInMenuBar(L("Up to date · %@", UpdateChecker.currentVersion))
-        case .failed: noteInMenuBar(L("Couldn't check"))
-        default: break
+        case .available: note = u.message == nil ? L("New version %@", latest) : L("Couldn't download")
+        case .ready: note = u.message == nil ? L("Ready to install · %@", latest) : L("Couldn't install")
+        case .upToDate: note = L("Up to date · %@", UpdateChecker.currentVersion)
+        case .failed: note = L("Couldn't check")
+        default: note = nil
         }
+        // El resultado queda también en el menú: el mensaje junto al ícono dura 4 s y se pierde.
+        lastUpdateNote = note
+        if let note { noteInMenuBar(note) }
     }
 
     /// Mensaje breve junto al ícono de la barra de menús; a los 4 s desaparece.

@@ -13,7 +13,7 @@ final class DropCard: NSView {
     var highlighted = false { didSet { needsDisplay = true } }
     var onAdd: (() -> Void)?
     private let bigStack = NSStackView()
-    private let addButton = NSButton(title: L("Add App…"), target: nil, action: nil)
+    private let addButton = NSButton(title: L("Pin App…"), target: nil, action: nil)
     private let compactButton = NSButton(title: "", target: nil, action: nil)
     private var heightConstraint: NSLayoutConstraint!
     private var compact = false { didSet { needsDisplay = true } }
@@ -32,6 +32,8 @@ final class DropCard: NSView {
         title.alignment = .center
         let caption = makeLabel(L("Its volume will stay fixed · up to %ld apps", maxPinnedApps), size: 11, color: .secondaryLabelColor)
         caption.alignment = .center
+        let explanation = makeLabel(L("Lower the Mac's volume: this app stays the same."), size: 11, color: .secondaryLabelColor)
+        explanation.alignment = .center
 
         addButton.target = self
         addButton.action = #selector(addTapped)
@@ -39,7 +41,7 @@ final class DropCard: NSView {
         addButton.controlSize = scaledControlSize(.small)
         addButton.setAccessibilityHelp(L("Opens a panel to choose the app whose volume you want to keep fixed"))
 
-        for v in [icon, title, caption, addButton] { bigStack.addArrangedSubview(v) }
+        for v in [icon, title, caption, explanation, addButton] { bigStack.addArrangedSubview(v) }
         bigStack.orientation = .vertical
         bigStack.alignment = .centerX
         bigStack.spacing = 3
@@ -77,8 +79,8 @@ final class DropCard: NSView {
         compact = count > 0
         bigStack.isHidden = compact
         compactButton.isHidden = !compact
-        heightConstraint.constant = compact ? max(44, scaled(44)) : max(140, scaled(140))
-        compactButton.title = L("Add another app… · %ld of %ld", count, maxPinnedApps)
+        heightConstraint.constant = compact ? max(44, scaled(44)) : max(168, scaled(168))
+        compactButton.title = L("Pin another app… · %ld of %ld", count, maxPinnedApps)
         toolTip = L("Drop the .app whose volume you want to keep fixed (up to %ld apps)", maxPinnedApps)
         isHidden = count >= maxPinnedApps
     }
@@ -151,6 +153,8 @@ final class AppRow: NSView {
         dot.contentTintColor = .tertiaryLabelColor
         dot.setAccessibilityElement(false)
         let top = NSStackView(views: [nameLabel, spacer(), dot, caption])
+        top.orientation = .horizontal
+        top.distribution = .fill
         top.alignment = .centerY
         top.spacing = 5
 
@@ -167,6 +171,8 @@ final class AppRow: NSView {
         percent.setContentHuggingPriority(.required, for: .horizontal)
         percent.setAccessibilityElement(false)   // el slider ya anuncia su valor: no duplicarlo
         let bottom = NSStackView(views: [slider, percent])
+        bottom.orientation = .horizontal
+        bottom.distribution = .fill
         bottom.alignment = .centerY
         bottom.spacing = 8
 
@@ -218,6 +224,8 @@ final class AppRow: NSView {
         removeButton.widthAnchor.constraint(equalToConstant: removeSide).isActive = true
         removeButton.heightAnchor.constraint(equalToConstant: removeSide).isActive = true
 
+        rowStack.orientation = .horizontal
+        rowStack.distribution = .fill
         for v in [icon, mid, removeButton] { rowStack.addArrangedSubview(v) }
         rowStack.alignment = .centerY
         rowStack.spacing = 10
@@ -241,30 +249,19 @@ final class AppRow: NSView {
         if updateLevel && !dragging { slider.floatValue = app.level }
         percent.stringValue = percentText(slider.floatValue)
         let s = app.status
-        caption.stringValue = Self.caption(for: s)
+        caption.stringValue = s.short
         dot.isHidden = caption.stringValue.isEmpty
         dot.contentTintColor = statusColor(s.kind)
-        caption.toolTip = s.detail ?? s.text
+        caption.toolTip = [s.text, s.detail].compactMap { $0 }.joined(separator: ". ")
 
-        let recovery = s.recovery
-        rowStack.alignment = recovery == .none ? .centerY : .top
-        detailBox.isHidden = recovery == .none
-        if recovery != .none {
-            detailLabel.stringValue = s.detail ?? s.text
-            fixButton.isHidden = recovery != .audioPermission
-            retryButton.isHidden = false
-        }
-    }
-
-    /// Texto corto para la fila: «Active · +6.2 dB» pasa a «+6.2 dB»; en reposo no se muestra nada.
-    private static func caption(for s: EngineStatus) -> String {
-        switch s.kind {
-        case .idle: return ""
-        case .active:
-            if let r = s.text.range(of: "· ") { return String(s.text[r.upperBound...]) }
-            return s.text
-        default: return s.text
-        }
+        // El detalle se muestra siempre que exista; los botones, solo si hay una acción de recuperación.
+        var detail = s.detail
+        if detail == nil, app.level < 0.005, s.kind == .active { detail = L("At 0 % this app is silent") }
+        rowStack.alignment = detail == nil ? .centerY : .top
+        detailBox.isHidden = detail == nil
+        detailLabel.stringValue = detail ?? ""
+        fixButton.isHidden = s.recovery != .audioPermission
+        retryButton.isHidden = s.recovery == .none
     }
 
     @objc private func sliderMoved() {

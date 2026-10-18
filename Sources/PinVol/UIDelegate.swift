@@ -33,12 +33,7 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ n: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        let add = NSMenuItem(title: L("Add App…"), action: #selector(addApp), keyEquivalent: "o")
-        add.target = self
-        let remove = NSMenuItem(title: L("Remove App"), action: #selector(removeFocusedApp), keyEquivalent: "\u{8}")
-        remove.keyEquivalentModifierMask = []
-        remove.target = self
-        installMainMenu(quitAction: #selector(quitAll), quitTitle: L("Quit PinVol"), extra: [add, remove])
+        installUIMainMenu()
         // La ventana se abre con el primer estado recibido (o a los 1,5 s si la residente no responde).
         backend.onState = { [weak self] _, _ in self?.open() }
         backend.onShow = { [weak self] tab in
@@ -95,6 +90,98 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ n: Notification) { backend.disconnect() }
+
+    // MARK: Menú principal
+
+    /// Las apps instaladas no tienen menú si no se crea: sin esto no hay ⌘O, ⌘, ni ⌘H, y el menú de la app
+    /// solo ofrecería «Salir».
+    private func installUIMainMenu() {
+        let main = NSMenu()
+        let appItem = NSMenuItem()
+        main.addItem(appItem)
+        let app = NSMenu()
+        app.addItem(menuItem(L("About PinVol"), #selector(showAbout), ""))
+        app.addItem(.separator())
+        app.addItem(menuItem(L("Settings…"), #selector(showSettings), ","))
+        app.addItem(.separator())
+        app.addItem(menuItem(L("Pin App…"), #selector(addApp), "o"))
+        let remove = menuItem(L("Remove App"), #selector(removeFocusedApp), "\u{8}")
+        remove.keyEquivalentModifierMask = []
+        app.addItem(remove)
+        app.addItem(.separator())
+        app.addItem(menuItem(L("Check for updates…"), #selector(checkForUpdates), ""))
+        app.addItem(.separator())
+        app.addItem(chained(L("Hide PinVol"), #selector(NSApplication.hide(_:)), "h"))
+        app.addItem(chained(L("Hide Others"), #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]))
+        app.addItem(chained(L("Show All"), #selector(NSApplication.unhideAllApplications(_:)), ""))
+        app.addItem(.separator())
+        app.addItem(withTitle: L("Quit PinVol"), action: #selector(quitAll), keyEquivalent: "q")
+        appItem.submenu = app
+
+        let editItem = NSMenuItem()
+        main.addItem(editItem)
+        let edit = NSMenu(title: L("Edit"))
+        edit.addItem(menuItem(L("Undo Remove App"), #selector(undoRemove), "z"))
+        editItem.submenu = edit
+
+        let viewItem = NSMenuItem()
+        main.addItem(viewItem)
+        let view = NSMenu(title: L("View"))
+        view.addItem(menuItem(L("Apps"), #selector(showApps), "1"))
+        view.addItem(menuItem(L("Settings"), #selector(showSettings), "2"))
+        view.addItem(menuItem(L("About"), #selector(showAbout), "3"))
+        viewItem.submenu = view
+
+        let windowItem = NSMenuItem()
+        main.addItem(windowItem)
+        let windowMenu = NSMenu(title: L("Window"))
+        windowMenu.addItem(withTitle: L("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        windowMenu.addItem(chained(L("Bring All to Front"), #selector(NSApplication.arrangeInFront(_:)), ""))
+        windowItem.submenu = windowMenu
+
+        let helpItem = NSMenuItem()
+        main.addItem(helpItem)
+        let help = NSMenu(title: L("Help"))
+        help.addItem(menuItem(L("PinVol Help"), #selector(openHelp), "?"))
+        helpItem.submenu = help
+
+        NSApp.mainMenu = main
+    }
+
+    private func menuItem(_ title: String, _ action: Selector, _ key: String,
+                          _ mask: NSEvent.ModifierFlags = .command) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        item.keyEquivalentModifierMask = mask
+        item.target = self
+        return item
+    }
+
+    /// Para las acciones que atiende NSApplication a través de la cadena de respondedores.
+    private func chained(_ title: String, _ action: Selector, _ key: String,
+                         _ mask: NSEvent.ModifierFlags = .command) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        item.keyEquivalentModifierMask = mask
+        item.target = nil
+        return item
+    }
+
+    @objc private func showAbout() { open(); settings?.select("about", animated: true); settings?.show() }
+    @objc private func showSettings() { open(); settings?.select("settings", animated: true); settings?.show() }
+    @objc private func showApps() { open(); settings?.select("apps", animated: true); settings?.show() }
+
+    @objc private func checkForUpdates() {
+        open()
+        backend.checkForUpdates()
+        settings?.select("about", animated: true)
+        settings?.show()
+    }
+
+    @objc private func undoRemove() { settings?.undoRemove() }
+
+    @objc private func openHelp() {
+        guard let url = URL(string: "https://github.com/claudiouvm/PinVol#readme") else { return }
+        NSWorkspace.shared.open(url)
+    }
 
     @objc private func quitAll() {
         backend.quit()

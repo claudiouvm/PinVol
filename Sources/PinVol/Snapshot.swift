@@ -20,7 +20,7 @@ final class StaticBackend: Backend {
     var state: AppState
     var onState: ((AppState, Bool) -> Void)?
     init(state: AppState) { self.state = state }
-    func assign(_ id: String) {}
+    func assign(_ id: String, level: Float?) {}
     func remove(_ id: String) {}
     func retry(_ id: String) {}
     func setLevel(_ id: String, _ v: Float) {}

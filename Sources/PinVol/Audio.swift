@@ -1,3 +1,4 @@
+import AppKit
 import CoreAudio
 import Foundation
 import os
@@ -153,6 +154,17 @@ struct EngineStatus {
     var detail: String? = nil   // explicación larga: se muestra en la fila y en el tooltip
     var recovery: Recovery = .none
 
+    /// Etiqueta corta para la fila: el estado se lee con palabras, no solo por el color del punto.
+    var short: String {
+        switch kind {
+        case .idle: return L("Off")
+        case .waiting: return L("Waiting…")
+        case .active: return L("Active")
+        case .warning: return L("At the limit")
+        case .error: return L("Error")
+        }
+    }
+
     // Estados que usan el motor, el resumen de la ventana y las capturas de desarrollo.
     static var dragToStart: EngineStatus { EngineStatus(kind: .idle, text: L("Drag an app in to start")) }
     static var waiting: EngineStatus { EngineStatus(kind: .waiting, text: L("Waiting for the app's audio…")) }
@@ -243,7 +255,20 @@ final class Engine {
         if bundleID == nil { return .dragToStart }
         if !enabled { return EngineStatus(kind: .idle, text: L("Fixed levels are off")) }
         if device == nil { return EngineStatus(kind: .error, text: L("No output device")) }
+        if !isRunning {
+            return EngineStatus(kind: .waiting, text: L("The app isn't open"),
+                                detail: L("PinVol will start controlling it when you open it."))
+        }
         return .waiting
+    }
+
+    /// ¿Está abierta la app (o alguno de sus procesos auxiliares)?
+    private var isRunning: Bool {
+        guard let bundleID else { return false }
+        return NSWorkspace.shared.runningApplications.contains { app in
+            guard let id = app.bundleIdentifier else { return false }
+            return claims(id, bundleID)
+        }
     }
 
     func updateGain() {

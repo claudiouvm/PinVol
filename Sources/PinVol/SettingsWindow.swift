@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 
 final class SettingsWindow: NSObject, NSWindowDelegate {
     private static let positionKey = "windowTopLeft"
+    private static let tabKey = "lastTab"
     private static let minWidth: CGFloat = 360
     private static let maxWidth: CGFloat = 900
     /// Página de Ko-fi a la que lleva el botón «Buy me a coffee!» de Acerca de (se abre en el navegador).
@@ -46,6 +47,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private let updatesSwitch = NSSwitch()
     private let updateDetail = makeLabel("", size: 11, color: .secondaryLabelColor)
     private let updateButton = NSButton(title: L("Check"), target: nil, action: nil)
+    private let updateProgress = NSProgressIndicator()
     private let statusDot = NSImageView()
     private let statusLabel = makeLabel("", size: 12, color: .secondaryLabelColor)
     private var tab = Tab.apps
@@ -55,6 +57,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private var announcedKind: EngineStatus.Kind?
     private var announcedText = ""
     private var announcedUpdateKind: UpdateState.Kind?
+    private var lastAnnouncedPercent = -1
+    private var userAskedUpdate = false
+    private var lastRemoved: (id: String, level: Float)?
+    private var lastAlertedMessage: String?
     private var resizeTimer: Timer?
     private var resizeTarget: CGFloat = 0
     private var fittingWindow = false
@@ -245,6 +251,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             sw.action = action
             sw.setAccessibilityLabel(title)
         }
+        let oneOn = L("At least one of the Dock and the menu bar must stay on")
+        dockSwitch.setAccessibilityHelp(oneOn)
+        menuBarSwitch.setAccessibilityHelp(oneOn)
 
         // Pestaña Apps
         panel.onDrop = { [weak self] urls in self?.dropped(urls) }
@@ -254,7 +263,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         panel.onOpenSettings = { [weak self] _ in self?.openAudioSettings() }
         panel.onLevel = { [weak self] id, v in self?.backend.setLevel(id, v) }
         let enableCard = Card(rows: [
-            formRow(L("Keep levels fixed"), detail: L("Offsets your Mac's system volume"), control: enableSwitch),
+            formRow(L("Keep levels fixed"), detail: L("Each app stays at its own level"), control: enableSwitch),
         ])
         fill(appsPage, with: [panel, enableCard])
 
@@ -277,17 +286,17 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         statusDot.contentTintColor = .tertiaryLabelColor
         statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let quit = NSButton(title: L("Quit"), target: self, action: #selector(quitTapped))
+        let quit = NSButton(title: L("Quit PinVol"), target: self, action: #selector(quitTapped))
         quit.bezelStyle = .rounded
         quit.controlSize = scaledControlSize(.small)
         quit.toolTip = L("Quits PinVol completely: the app stops controlling the volume")
-        let footer = NSStackView(views: [statusDot, statusLabel, spacer(), quit])
+        let footer = NSStackView(views: [statusDot, statusLabel, spacer(), updateBanner, quit])
         footer.alignment = .centerY
         footer.distribution = .fill
         footer.spacing = 6
 
         // Ensamblado
-        let sections: [NSView] = [header, updateBanner, tabs, appsPage, settingsPage, aboutPage, footer]
+        let sections: [NSView] = [header, tabs, appsPage, settingsPage, aboutPage, footer]
         for v in sections { root.addArrangedSubview(v) }
         root.orientation = .vertical
         root.alignment = .leading
@@ -325,9 +334,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        window.standardWindowButton(.closeButton)?.setAccessibilityHelp(L("Closes the window; PinVol keeps running in the menu bar"))
         window.contentMinSize = NSSize(width: Self.minWidth, height: 240)
         window.contentMaxSize = NSSize(width: Self.maxWidth, height: 3000)
-        showTab(.apps, animated: false)
+        showTab(Tab(rawValue: UserDefaults.standard.integer(forKey: Self.tabKey)) ?? .apps, animated: false)
     }
 
     private func buildAbout() {
@@ -341,14 +351,38 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         logo.heightAnchor.constraint(equalToConstant: 112).isActive = true
         let name = makeLabel("PinVol", size: 24, weight: .semibold)
         let versionLabel = makeLabel(L("Version %@", channel + version), size: 12, color: .secondaryLabelColor)
-        let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude <3"), size: 12)
+        let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude ♥"), size: 12)
 
         updateButton.bezelStyle = .rounded
         updateButton.controlSize = scaledControlSize(.small)
         updateButton.target = self
         updateButton.action = #selector(updateAction)
-        updateDetail.lineBreakMode = .byTruncatingTail
-        let updateCard = Card(rows: [formRow(L("Updates"), detailLabel: updateDetail, control: updateButton)])
+        updateDetail.lineBreakMode = .byWordWrapping
+        updateDetail.maximumNumberOfLines = 2
+        updateProgress.style = .bar
+        updateProgress.isIndeterminate = false
+        updateProgress.minValue = 0
+        updateProgress.maxValue = 1
+        updateProgress.controlSize = .small
+        updateProgress.isHidden = true
+        updateProgress.setAccessibilityLabel(L("Download progress"))
+        let updateTitles = NSStackView(views: [makeLabel(L("Updates")), updateDetail, updateProgress])
+        updateTitles.orientation = .vertical
+        updateTitles.alignment = .leading
+        updateTitles.spacing = 2
+        updateTitles.setCustomSpacing(4, after: updateDetail)
+        let updateRow = NSView()
+        for v in [updateTitles, updateButton] { v.translatesAutoresizingMaskIntoConstraints = false; updateRow.addSubview(v) }
+        NSLayoutConstraint.activate([
+            updateTitles.leadingAnchor.constraint(equalTo: updateRow.leadingAnchor, constant: 14),
+            updateTitles.centerYAnchor.constraint(equalTo: updateRow.centerYAnchor),
+            updateButton.trailingAnchor.constraint(equalTo: updateRow.trailingAnchor, constant: -14),
+            updateButton.centerYAnchor.constraint(equalTo: updateRow.centerYAnchor),
+            updateButton.leadingAnchor.constraint(greaterThanOrEqualTo: updateTitles.trailingAnchor, constant: 10),
+            updateRow.heightAnchor.constraint(equalToConstant: scaled(64)),
+            updateProgress.widthAnchor.constraint(equalTo: updateTitles.widthAnchor),
+        ])
+        let updateCard = Card(rows: [updateRow])
 
         let github = NSButton(title: L("Source code on GitHub"), target: self, action: #selector(openGitHub))
         github.isBordered = false
@@ -385,6 +419,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             page.alphaValue = 1
         }
         header.isHidden = t == .about
+        if changed { UserDefaults.standard.set(t.rawValue, forKey: Self.tabKey) }
         refreshBanner()
         fitWindow(animated: animated)
         if animated && changed && sized && !reduceMotion {   // la página nueva aparece con un fundido, a la par del cambio de tamaño
@@ -404,6 +439,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         enableSwitch.state = st.enabled ? .on : .off
         dockSwitch.state = st.showDock ? .on : .off
         menuBarSwitch.state = st.showMenuBar ? .on : .off
+        // La última vía de acceso no se puede apagar: se deshabilita el interruptor en vez de revertirlo en silencio.
+        dockSwitch.isEnabled = st.showMenuBar || !st.showDock
+        menuBarSwitch.isEnabled = st.showDock || !st.showMenuBar
         updatesSwitch.state = st.checkUpdates ? .on : .off
         loginSwitch.state = SMAppService.mainApp.status == .enabled ? .on : .off
         applyUpdate(st.update)
@@ -491,17 +529,55 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         updateButton.isEnabled = enabled
         updateDetail.textColor = color
         updateDetail.toolTip = updateDetail.stringValue
+        updateProgress.isHidden = u.kind != .downloading
+        updateProgress.doubleValue = u.progress ?? 0
+        updateProgress.setAccessibilityValueDescription(percentText(Float(u.progress ?? 0)))
+        if u.kind == .downloading {
+            let step = Int(((u.progress ?? 0) * 10).rounded(.down)) * 10
+            if step != lastAnnouncedPercent, window.isVisible {
+                lastAnnouncedPercent = step
+                announce(L("Downloading… %@", percent))
+            }
+        } else {
+            lastAnnouncedPercent = -1
+        }
         if window.isVisible, u.kind != announcedUpdateKind,
            [.available, .ready, .failed, .upToDate].contains(u.kind) {
             announce(updateDetail.stringValue, priority: u.kind == .failed ? .high : .medium)
         }
         announcedUpdateKind = u.kind
 
+        // Un fallo de una acción que pidió el usuario se muestra en una alerta, no solo en una etiqueta de 11 pt.
+        if userAskedUpdate {
+            if let message = u.message, u.kind != .downloading, message != lastAlertedMessage {
+                lastAlertedMessage = message
+                userAskedUpdate = false
+                DispatchQueue.main.async {
+                    let alert = NSAlert()
+                    alert.alertStyle = .warning
+                    alert.messageText = L("Couldn't update")
+                    alert.informativeText = message
+                    alert.addButton(withTitle: L("OK"))
+                    alert.runModal()
+                }
+            } else if u.kind == .upToDate || (u.kind == .available && u.message == nil) || u.kind == .ready {
+                userAskedUpdate = false
+            }
+        }
+
         switch u.kind {
-        case .available: updateBanner.title = L("Version %@ available · Download", latest)
-        case .downloading: updateBanner.title = L("Downloading… %@", percent)
-        case .ready: updateBanner.title = L("Version %@ ready · Install and restart", latest)
-        case .installing: updateBanner.title = L("Installing…")
+        case .available:
+            updateBanner.title = L("Update to %@", latest)
+            updateBanner.toolTip = L("Version %@ available · Download", latest)
+        case .downloading:
+            updateBanner.title = L("Downloading… %@", percent)
+            updateBanner.toolTip = updateDetail.stringValue
+        case .ready:
+            updateBanner.title = L("Install %@", latest)
+            updateBanner.toolTip = L("Version %@ ready · Install and restart", latest)
+        case .installing:
+            updateBanner.title = L("Installing…")
+            updateBanner.toolTip = updateDetail.stringValue
         default: break
         }
         updateBanner.isEnabled = u.kind == .available || u.kind == .ready
@@ -517,6 +593,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     /// Lo que piden el botón de Acerca de y el aviso de arriba según el estado: descargar, instalar o buscar.
     @objc private func updateAction() {
+        userAskedUpdate = true
         switch backend.state.update.kind {
         case .available: backend.downloadUpdate()
         case .ready: backend.installUpdate()
@@ -540,8 +617,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         picker.allowsMultipleSelection = true
         picker.treatsFilePackagesAsDirectories = false
         picker.allowedContentTypes = [.applicationBundle]
-        picker.prompt = L("Add")
-        picker.message = L("Choose the app whose volume you want to keep fixed")
+        picker.prompt = L("Pin")
+        picker.message = L("Choose the app to pin")
         if picker.runModal() == .OK { dropped(picker.urls) }
     }
 
@@ -568,6 +645,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     // MARK: Acciones
 
     private func dropped(_ urls: [URL]) {
+        let wasEnabled = backend.state.enabled
         var known = Set(backend.state.apps.map { $0.id })
         var added = 0, repeated = 0, unreadable = 0, overflow = 0
         for url in urls {
@@ -575,11 +653,13 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             if known.contains(id) { repeated += 1; continue }
             if known.count >= maxPinnedApps { overflow += 1; continue }
             known.insert(id)
-            backend.assign(id)   // la residente responde con el estado completo (nivel inicial, interruptor)
+            backend.assign(id, level: nil)   // la residente responde con el estado completo (nivel inicial, interruptor)
             added += 1
         }
         if overflow > 0 {
             flash(L("Maximum %ld apps: remove one to add another", maxPinnedApps))
+        } else if added > 0 && !wasEnabled {
+            flash(L("Fixed levels are on now"))
         } else if added == 0 && unreadable > 0 {
             flash(L("Couldn't read that app"), kind: .error)
         } else if added == 0 && repeated > 0 {
@@ -588,8 +668,19 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private func removeApp(_ id: String) {
+        let removed = backend.state.apps.first { $0.id == id }
         backend.remove(id)
         sync()
+        if let removed { lastRemoved = (removed.id, removed.level) }
+    }
+
+    /// ⌘Z: vuelve a añadir la última app quitada, con su nivel.
+    func undoRemove() {
+        guard let removed = lastRemoved else { return }
+        lastRemoved = nil
+        backend.assign(removed.id, level: removed.level)
+        sync()
+        flash(L("App added back"))
     }
 
     @objc private func tabChanged() { showTab(Tab(rawValue: tabs.selectedSegment) ?? .apps, animated: true) }
@@ -599,6 +690,15 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     @objc private func updatesChanged() { backend.setCheckUpdates(updatesSwitch.state == .on) }
 
     @objc private func quitTapped() {
+        if backend.state.enabled && !backend.state.apps.isEmpty {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = L("Quit PinVol?")
+            alert.informativeText = L("The apps you pinned will follow the Mac's volume again.")
+            alert.addButton(withTitle: L("Quit PinVol"))
+            alert.addButton(withTitle: L("Cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
         backend.quit()
         NSApp.terminate(nil)
     }
