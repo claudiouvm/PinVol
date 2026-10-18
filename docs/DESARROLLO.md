@@ -76,6 +76,7 @@ La ventana apunta a **WCAG 2.2 AA** y a las HIG de macOS:
 - El estado se escribe, no solo se colorea: cada fila dice `Activo`, `En espera…`, `Error`… y la explicación de un error es visible, con **Abrir Ajustes del Sistema** y **Reintentar**, en lugar de vivir en un tooltip.
 - Los mensajes breves (pie y barra de menús) se publican como anuncios de accesibilidad: quien usa VoiceOver los oye.
 - Los botones que son solo un ícono miden al menos 24×24 pt (el de quitar, 24×24).
+- La ventana se dimensiona con la pestaña más alta (Apps, Ajustes o Acerca de), así que cambiar de pestaña no la redimensiona; un separador flexible mantiene el pie abajo y Acerca de usa la misma cabecera y alineación izquierda que el resto.
 - **⌥⌘P** abre o trae la ventana desde cualquier app: la interfaz es otro proceso y no aparece en ⌘Tab.
 - El texto sigue el tamaño de cuerpo del sistema y se puede forzar con `PV_TEXT_SCALE`; la ventana se redimensiona, hace scroll si el contenido no cabe y omite las animaciones con «Reducir movimiento».
 - Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste. La barra de pestañas es propia (`TabBar`) para que la etiqueta seleccionada garantice 4,5:1, algo que el control segmentado del sistema no permite.

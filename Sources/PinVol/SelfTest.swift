@@ -236,6 +236,31 @@ final class AccessibilitySelfTestDelegate: NSObject, NSApplicationDelegate {
             settings.window.orderOut(nil)
         }
 
+        // Cambiar de pestaña no debe redimensionar la ventana, y el pie tiene que quedar dentro.
+        let oneApp = makeState([("com.apple.Music", 0.45, active)])
+        let layout = SettingsWindow(backend: StaticBackend(state: oneApp))
+        layout.select("apps")
+        layout.show()
+        layout.window.layoutIfNeeded()
+        var heights: [CGFloat] = []
+        for tabName in ["apps", "settings", "about"] {
+            layout.select(tabName)
+            layout.window.layoutIfNeeded()
+            heights.append(layout.window.frame.height)
+            if let quit = findQuitButton(in: layout.window) {
+                let frame = quit.convert(quit.bounds, to: nil)
+                if !layout.window.contentView!.bounds.intersects(frame) {
+                    problems.append("el pie queda fuera de la ventana en la pestaña \(tabName)")
+                }
+            } else {
+                problems.append("no se encuentra el botón de salir en la pestaña \(tabName)")
+            }
+        }
+        if (heights.max() ?? 0) - (heights.min() ?? 0) > 0.5 {
+            problems.append("cambiar de pestaña redimensiona la ventana: \(heights.map { Int($0) })")
+        }
+        layout.window.orderOut(nil)
+
         if problems.isEmpty {
             print("OK: accesibilidad (\(cases.count) estados, escala \(String(format: "%.2f", textScale)))")
             exit(0)
@@ -243,6 +268,16 @@ final class AccessibilitySelfTestDelegate: NSObject, NSApplicationDelegate {
         for problem in problems { print("FALLA \(problem)") }
         print("\(problems.count) problema(s) de accesibilidad")
         exit(1)
+    }
+
+    private func findQuitButton(in window: NSWindow) -> NSButton? {
+        func walk(_ view: NSView) -> NSButton? {
+            if let button = view as? NSButton, button.identifier?.rawValue == "quit" { return button }
+            for sub in view.subviews { if let found = walk(sub) { return found } }
+            return nil
+        }
+        guard let root = window.contentView else { return nil }
+        return walk(root)
     }
 
     private func inspect(_ window: NSWindow, context: String) -> [String] {

@@ -63,6 +63,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private var resizeTimer: Timer?
     private var resizeTarget: CGFloat = 0
     private var fittingWindow = false
+    private var lastFittedHeight: CGFloat = 0
+    private var lastFittedWidth: CGFloat = 0
+    private var ignoreResize = false
+    private var docMinHeight: NSLayoutConstraint!
     private static let resizeDuration: TimeInterval = 0.25
     var onClose: (() -> Void)?
 
@@ -71,10 +75,11 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         super.init()
         buildUI()
         sync()
-        // El tamaño final se fija antes de colocar la ventana (ver restorePosition).
-        root.layoutSubtreeIfNeeded()
-        window.setContentSize(NSSize(width: max(Self.minWidth, scaled(Self.minWidth)), height: root.fittingSize.height))
+        // El tamaño final se fija con la página de apps visible (la más alta) y antes de colocar la ventana.
+        // Después se abre la pestaña guardada sin volver a ajustar el alto: cambiar de pestaña no redimensiona.
         sized = true
+        fitWindow(animated: false)
+        showTab(Tab(rawValue: UserDefaults.standard.integer(forKey: Self.tabKey)) ?? .apps, animated: false)
         restorePosition()
         window.delegate = self
         backend.onState = { [weak self] state, full in
@@ -115,8 +120,11 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     func windowDidMove(_ notification: Notification) { if resizeTimer == nil { savePosition() } }
 
     /// Al cambiar el ancho, el contenido cambia de alto: la ventana se reajusta (el alto lo decide el contenido).
+    /// El aviso que llega después de un cambio de alto propio se ignora para no entrar en un bucle de layout.
     func windowDidResize(_ notification: Notification) {
-        guard sized, !fittingWindow else { return }
+        guard sized, !fittingWindow, !ignoreResize, resizeTimer == nil, tab == .apps else { return }
+        let width = window.contentView?.frame.width ?? 0
+        if abs(window.frame.height - lastFittedHeight) < 0.5, abs(width - lastFittedWidth) < 0.5 { return }
         fitWindow(animated: false)
     }
 
@@ -153,13 +161,31 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         return max(320, (window.screen?.visibleFrame.height ?? 900) - 24)
     }
 
-    /// Ajusta la altura de la ventana al contenido actual, manteniendo fija su esquina superior izquierda.
-    /// Siempre con la misma animación (duración y curva); sin ella si el usuario pidió reducir el movimiento.
+    /// Alto de cada página; la ventana usa el mayor para que cambiar de pestaña no la redimensione.
+    private func pageHeights() -> [CGFloat] { [appsPage, settingsPage, aboutPage].map { $0.fittingSize.height } }
+
+    private var currentPageHeight: CGFloat {
+        switch tab {
+        case .apps: return appsPage.fittingSize.height
+        case .settings: return settingsPage.fittingSize.height
+        case .about: return aboutPage.fittingSize.height
+        }
+    }
+
+    /// Ajusta la altura de la ventana al contenido, manteniendo fija su esquina superior izquierda.
+    /// La altura es la de la pestaña más alta para todas: cambiar de pestaña no redimensiona.
     private func fitWindow(animated: Bool) {
         guard sized, let content = window.contentView else { return }
         root.layoutSubtreeIfNeeded()
+        // Con el alto mínimo del documento activo, el contenido se estira hasta la ventana y su altura
+        // ya no es la natural: se mide con esa restricción desactivada.
+        docMinHeight.isActive = false
+        root.layoutSubtreeIfNeeded()
+        let natural = root.fittingSize.height
+        let tallest = pageHeights().max() ?? currentPageHeight
+        docMinHeight.isActive = true
         let chrome = window.frame.height - content.frame.height
-        let desired = root.fittingSize.height + chrome
+        let desired = natural + max(0, tallest - currentPageHeight) + chrome
         let target = min(desired, maxWindowHeight)
         scroll.hasVerticalScroller = desired > maxWindowHeight + 0.5
         if resizeTimer != nil, abs(target - resizeTarget) < 0.5 { return }   // ya va hacia ahí
@@ -190,8 +216,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         var f = window.frame
         f.origin.y = f.maxY - h
         f.size.height = h
+        ignoreResize = true
         window.setFrame(f, display: true)
+        lastFittedHeight = h
+        lastFittedWidth = window.contentView?.frame.width ?? 0
         fittingWindow = false
+        DispatchQueue.main.async { [weak self] in self?.ignoreResize = false }
     }
 
     // MARK: Interfaz
@@ -208,7 +238,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private func buildUI() {
-        // Cabecera (la pestaña «Acerca de» la reemplaza por un logo grande)
+        window.contentMinSize = NSSize(width: Self.minWidth, height: 240)
+        window.contentMaxSize = NSSize(width: Self.maxWidth, height: 3000)
+        // Cabecera
         let appIcon = NSImageView(image: NSApp.applicationIconImage)
         appIcon.setAccessibilityElement(false)
         appIcon.widthAnchor.constraint(equalToConstant: 48).isActive = true
@@ -278,53 +310,66 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         // Pestaña Acerca de
         buildAbout()
 
-        // Pie: estado + salir
+        // Pie: estado + salir, al final del contenido. Si la ventana es más alta que la página, un
+        // separador flexible lo empuja al fondo; si la página es más alta, se desplaza con ella.
         statusDot.image = symbol("circle.fill", size: scaled(8))
         statusDot.contentTintColor = .tertiaryLabelColor
         statusDot.setAccessibilityElement(false)
         statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let quit = NSButton(title: L("Quit PinVol"), target: self, action: #selector(quitTapped))
+        quit.identifier = NSUserInterfaceItemIdentifier("quit")
         quit.bezelStyle = .rounded
         quit.controlSize = scaledControlSize(.small)
         quit.toolTip = L("Quits PinVol completely: the app stops controlling the volume")
         let footer = NSStackView(views: [statusDot, statusLabel, spacer(), updateBanner, quit])
+        footer.orientation = .horizontal
         footer.alignment = .centerY
         footer.distribution = .fill
         footer.spacing = 6
 
-        // Ensamblado
-        let sections: [NSView] = [header, tabs, appsPage, settingsPage, aboutPage, footer]
+        let flexible = NSView()
+        flexible.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .vertical)
+        flexible.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(1), for: .vertical)
+
+        // Ensamblado: cabecera, pestañas, página visible y pie. Todo dentro del scroll; el separador
+        // flexible absorbe el alto sobrante para que el pie quede abajo.
+        let sections: [NSView] = [header, tabs, appsPage, settingsPage, aboutPage, flexible, footer]
         for v in sections { root.addArrangedSubview(v) }
         root.orientation = .vertical
         root.alignment = .leading
+        root.distribution = .fill
         root.spacing = 14
         root.setCustomSpacing(18, after: header)
-        root.edgeInsets = NSEdgeInsets(top: 44, left: 20, bottom: 18, right: 20)
+        root.setCustomSpacing(0, after: flexible)
+        root.edgeInsets = NSEdgeInsets(top: scaled(32), left: 20, bottom: 8, right: 20)
         for v in sections { v.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -40).isActive = true }
 
-        let container = NSView()
-        container.translatesAutoresizingMaskIntoConstraints = false
+        let document = NSView()
+        document.translatesAutoresizingMaskIntoConstraints = false
         root.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(root)
+        document.addSubview(root)
         NSLayoutConstraint.activate([
-            root.topAnchor.constraint(equalTo: container.topAnchor),
-            root.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            root.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            root.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            root.topAnchor.constraint(equalTo: document.topAnchor),
+            root.leadingAnchor.constraint(equalTo: document.leadingAnchor),
+            root.trailingAnchor.constraint(equalTo: document.trailingAnchor),
+            root.bottomAnchor.constraint(equalTo: document.bottomAnchor),
         ])
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.hasHorizontalScroller = false
         scroll.autohidesScrollers = true
         scroll.scrollerStyle = .overlay
-        scroll.documentView = container
+        scroll.automaticallyAdjustsContentInsets = false
+        scroll.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        scroll.documentView = document
         window.contentView = scroll
+        docMinHeight = document.heightAnchor.constraint(greaterThanOrEqualTo: scroll.contentView.heightAnchor)
+        docMinHeight.isActive = true
         NSLayoutConstraint.activate([
-            container.leadingAnchor.constraint(equalTo: scroll.contentView.leadingAnchor),
-            container.trailingAnchor.constraint(equalTo: scroll.contentView.trailingAnchor),
-            container.topAnchor.constraint(equalTo: scroll.contentView.topAnchor),
-            container.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor),
+            document.leadingAnchor.constraint(equalTo: scroll.contentView.leadingAnchor),
+            document.topAnchor.constraint(equalTo: scroll.contentView.topAnchor),
+            document.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor),
         ])
         window.title = "PinVol"
         window.titleVisibility = .hidden
@@ -333,9 +378,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.closeButton)?.setAccessibilityHelp(L("Closes the window; PinVol keeps running in the menu bar"))
-        window.contentMinSize = NSSize(width: Self.minWidth, height: 240)
-        window.contentMaxSize = NSSize(width: Self.maxWidth, height: 3000)
-        showTab(Tab(rawValue: UserDefaults.standard.integer(forKey: Self.tabKey)) ?? .apps, animated: false)
+        showTab(.apps, animated: false)
     }
 
     private func buildAbout() {
@@ -343,14 +386,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         let version = info?["CFBundleShortVersionString"] as? String ?? "?"
         let channel = (info?["PinVolReleaseChannel"] as? String).map { "\($0) " } ?? ""
 
-        let logo = NSImageView(image: NSApp.applicationIconImage)
-        logo.setAccessibilityElement(false)
-        logo.imageScaling = .scaleProportionallyUpOrDown
-        logo.widthAnchor.constraint(equalToConstant: 112).isActive = true
-        logo.heightAnchor.constraint(equalToConstant: 112).isActive = true
-        let name = makeLabel("PinVol", size: 24, weight: .semibold)
-        let versionLabel = makeLabel(L("Version %@", channel + version), size: 12, color: .secondaryLabelColor)
-        let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude ♥"), size: 12)
+        // Mismo esqueleto que Ajustes: la cabecera de la ventana ya muestra el ícono y el nombre; aquí van
+        // la versión (en la fila de actualizaciones), la autoría y los enlaces, alineados como el resto.
+        let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude ♥"), size: 12, color: .secondaryLabelColor)
 
         updateButton.bezelStyle = .rounded
         updateButton.controlSize = scaledControlSize(.small)
@@ -401,17 +439,20 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         coffee.imagePosition = .imageLeading
         coffee.toolTip = L("Support PinVol on Ko-fi")
 
-        let aboutViews: [NSView] = [logo, name, versionLabel, madeIn, updateCard, github, coffee]
-        for v in aboutViews { aboutPage.addArrangedSubview(v) }
+        let links = NSStackView(views: [github, spacer(), coffee])
+        links.orientation = .horizontal
+        links.alignment = .centerY
+        links.spacing = 12
+
+        let aboutViews: [NSView] = [madeIn, updateCard, links]
+        for v in aboutViews {
+            aboutPage.addArrangedSubview(v)
+            v.widthAnchor.constraint(equalTo: aboutPage.widthAnchor).isActive = true
+        }
         aboutPage.orientation = .vertical
-        aboutPage.alignment = .centerX
-        aboutPage.spacing = 4
-        aboutPage.setCustomSpacing(12, after: logo)
-        aboutPage.setCustomSpacing(14, after: versionLabel)
-        aboutPage.setCustomSpacing(22, after: madeIn)
-        aboutPage.setCustomSpacing(10, after: updateCard)
-        aboutPage.setCustomSpacing(12, after: github)
-        updateCard.widthAnchor.constraint(equalTo: aboutPage.widthAnchor).isActive = true
+        aboutPage.alignment = .leading
+        aboutPage.spacing = 10
+        aboutPage.setCustomSpacing(18, after: updateCard)
     }
 
     private func showTab(_ t: Tab, animated: Bool) {
@@ -423,11 +464,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             page.isHidden = i != t.rawValue
             page.alphaValue = 1
         }
-        header.isHidden = t == .about
         if changed { UserDefaults.standard.set(t.rawValue, forKey: Self.tabKey) }
         refreshBanner()
-        fitWindow(animated: animated)
-        if animated && changed && sized && !reduceMotion {   // la página nueva aparece con un fundido, a la par del cambio de tamaño
+        if animated && changed && sized && !reduceMotion {   // la página nueva aparece con un fundido
             let incoming = pages[t.rawValue]
             incoming.alphaValue = 0
             NSAnimationContext.runAnimationGroup { ctx in
@@ -452,7 +491,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         applyUpdate(st.update)
         apply(st.summary)
         if window.initialFirstResponder == nil { window.initialFirstResponder = panel.firstFocusable }
-        fitWindow(animated: true)
+        // El alto solo se recalcula con la página de apps delante: al cambiar de pestaña no se redimensiona.
+        if tab == .apps { fitWindow(animated: true) }
     }
 
     private func applyStatuses(_ st: AppState) {
@@ -532,6 +572,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             color = .systemOrange
         }
         updateButton.isEnabled = enabled
+        switch u.kind {
+        case .available: updateButton.setAccessibilityLabel(L("Download update"))
+        case .ready: updateButton.setAccessibilityLabel(L("Install update"))
+        case .failed: updateButton.setAccessibilityLabel(L("Retry the update"))
+        default: updateButton.setAccessibilityLabel(L("Check for updates"))
+        }
         updateDetail.textColor = color
         updateDetail.toolTip = updateDetail.stringValue
         updateProgress.isHidden = u.kind != .downloading
