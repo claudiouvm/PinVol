@@ -182,8 +182,6 @@ func runContrastSelfTest() -> Never {
         check("\(appearanceName): track del slider", track, background, minimum: 3)
         check("\(appearanceName): knob del slider",
               resolved(PinVolPalette.knobFill, appearance, over: track), track, minimum: 3)
-        check("\(appearanceName): borde de los botones",
-              resolved(PinVolPalette.buttonBorder, appearance, over: background), background, minimum: 3)
     }
     // El texto blanco del segmento seleccionado de las pestañas: el acento se oscurece hasta 4,5:1.
     for (appearanceName, appearance) in [("claro", NSAppearance(named: .aqua)!), ("oscuro", NSAppearance(named: .darkAqua)!)] {

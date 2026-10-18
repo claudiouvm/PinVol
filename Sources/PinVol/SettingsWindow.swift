@@ -33,7 +33,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private let scroll = NSScrollView()
     private let root = NSStackView()
     private let header = NSStackView()
-    private let updateBanner = PillButton(title: "")
+    private let updateBanner = NSButton()
     private let tabs = TabBar(titles: Tab.allCases.map { $0.title })
     private let appsPage = NSStackView()
     private let settingsPage = NSStackView()
@@ -43,7 +43,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private let loginSwitch = NSSwitch()
     private let updatesSwitch = NSSwitch()
     private let updateDetail = makeLabel("", size: 11, color: .secondaryLabelColor)
-    private let updateButton = PillButton(title: L("Check"))
+    private let updateButton = NSButton(title: L("Check"), target: nil, action: nil)
     private let updateProgress = NSProgressIndicator()
     private let statusDot = NSImageView()
     private let statusLabel = makeLabel("", size: 12, color: .secondaryLabelColor)
@@ -256,6 +256,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         header.spacing = 12
 
         // Aviso de versión nueva
+        updateBanner.bezelStyle = .rounded
+        updateBanner.controlSize = scaledControlSize(.small)
         updateBanner.image = symbol("arrow.down.circle.fill", size: scaled(12))
         updateBanner.imagePosition = .imageLeading
         updateBanner.target = self
@@ -306,9 +308,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         statusDot.setAccessibilityElement(false)
         statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let quit = PillButton(title: L("Quit PinVol"))
-        quit.target = self
-        quit.action = #selector(quitTapped)
+        let quit = NSButton(title: L("Quit PinVol"), target: self, action: #selector(quitTapped))
+        quit.bezelStyle = .rounded
+        quit.controlSize = scaledControlSize(.small)
         quit.identifier = NSUserInterfaceItemIdentifier("quit")
         quit.toolTip = L("Quits PinVol completely: the app stops controlling the volume")
         let footer = NSStackView(views: [statusDot, statusLabel, spacer(), updateBanner, quit])
@@ -379,6 +381,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         // la versión (en la fila de actualizaciones), la autoría y los enlaces, alineados como el resto.
         let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude ♥"), size: 12, color: .secondaryLabelColor)
 
+        updateButton.bezelStyle = .rounded
+        updateButton.controlSize = scaledControlSize(.small)
         updateButton.target = self
         updateButton.action = #selector(updateAction)
         updateDetail.lineBreakMode = .byWordWrapping
@@ -419,10 +423,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         ])
         github.setAccessibilityLabel(L("Source code on GitHub"))
 
-        let coffee = PillButton(title: L("Buy me a coffee!"))
-        coffee.image = symbol("cup.and.saucer.fill", size: scaled(12))
-        coffee.target = self
-        coffee.action = #selector(openDonate)
+        let coffee = NSButton(title: L("Buy me a coffee!"), image: symbol("cup.and.saucer.fill", size: scaled(12)) ?? NSImage(),
+                              target: self, action: #selector(openDonate))
+        coffee.bezelStyle = .rounded
+        coffee.controlSize = scaledControlSize(.regular)
         coffee.imagePosition = .imageLeading
         coffee.toolTip = L("Support PinVol on Ko-fi")
 

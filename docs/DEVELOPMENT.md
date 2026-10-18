@@ -79,12 +79,12 @@ The window targets **WCAG 2.2 AA** and the macOS HIG:
 - The window is sized to the tallest tab (Apps, Settings or About), so switching tabs does not resize it; a flexible spacer keeps the footer at the bottom and About uses the same header and left alignment as the rest.
 - **⌥⌘P** opens or raises the window from any app. PinVol is a menu-bar app: it has no Dock icon and does not appear in ⌘Tab.
 - Text follows the system body size and can be forced with `PV_TEXT_SCALE`; the window is resizable, scrolls when the content does not fit, and skips animations when Reduce Motion is on.
-- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting. The tab bar is custom (`TabBar`) so the selected label guarantees 4.5:1, which the system segmented control does not allow. The slider uses `ContrastSliderCell` (track and knob ≥3:1) and action buttons use `PillButton`, whose bezel grows with the text.
+- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting. The tab bar is custom (`TabBar`) so the selected label guarantees 4.5:1, which the system segmented control does not allow. The slider uses `ContrastSliderCell` (track and knob ≥3:1); the action buttons are native `NSButton` controls.
 - Adding apps does not depend on dragging: **Pin App…** (⌘O) opens the standard panel, and **Remove App** (⌫) plus **⌘Z** cover the keyboard.
 
 `tools/test-a11y.sh` builds the `-DSNAPSHOT` variant and runs `--selftest-contrast` (WCAG math on the palette, light and dark) and `--selftest-a11y` (names, decorative images, 24 pt icon-only buttons, initial focus and button titles, at 100 % and 150 % text). The CI runs it. For a visual pass: `PV_TEXT_SCALE=2 ./snapshot.sh` renders the window at 200 %.
 
-Known limits: PinVol is a menu-bar app by design. It has no Dock icon or ⌘Tab entry; open the window from the menu bar icon or with ⌥⌘P. The interface runs in a separate process and quits when the window closes.
+Known limits: PinVol is a menu-bar app by design. It has no Dock icon or ⌘Tab entry; open the window from the menu bar icon or with ⌥⌘P. The interface runs in a separate process and quits when the window closes. Button labels use the native bezel and the system control size, so they grow less than the rest of the text when `PV_TEXT_SCALE` is raised.
 
 See [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) for the audit behind this.
 

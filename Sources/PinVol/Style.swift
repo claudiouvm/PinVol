@@ -25,6 +25,15 @@ func scaledMonospacedDigitFont(_ size: CGFloat) -> NSFont {
     .monospacedDigitSystemFont(ofSize: scaled(size), weight: .regular)
 }
 
+/// Los botones con bisel nativo no escalan su fuente: se agranda el tamaño de control cuando el texto crece.
+func scaledControlSize(_ size: NSControl.ControlSize) -> NSControl.ControlSize {
+    switch textScale {
+    case 1.45...: return .large
+    case 1.1...: return .regular
+    default: return size
+    }
+}
+
 // MARK: - Paleta
 
 /// Colores propios con contraste comprobado. Los del sistema (texto, separadores) se adaptan solos;
@@ -68,20 +77,6 @@ enum PinVolPalette {
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(white: 0.12, alpha: 1) : .white
     }
     static var knobBorder: NSColor { .secondaryLabelColor }
-
-    /// Fondo y borde de los botones propios (PillButton).
-    static let buttonFill = NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(white: 0.22, alpha: 1)
-                                                                   : NSColor(white: 0.95, alpha: 1)
-    }
-    static let buttonFillPressed = NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(white: 0.28, alpha: 1)
-                                                                   : NSColor(white: 0.90, alpha: 1)
-    }
-    static let buttonBorder = NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(white: 0.58, alpha: 1)
-                                                                   : NSColor(white: 0.45, alpha: 1)
-    }
 
     /// Acento del sistema oscurecido lo justo para que el texto blanco del segmento seleccionado llegue a 4,5:1.
     /// Conserva el tono que eligió el usuario; solo baja el brillo.
@@ -343,52 +338,6 @@ final class TabBar: NSView {
         let selected = NSBezierPath(roundedRect: frame, xRadius: 6, yRadius: 6)
         PinVolPalette.accessibleAccent(for: effectiveAppearance).setFill()
         selected.fill()
-    }
-}
-
-// MARK: - Botón propio
-
-/// Botón con bisel dibujado por la app: crece con el texto (el bisel del sistema no) y mantiene el
-/// borde por encima de 3:1. Sigue siendo un NSButton, así que conserva clic, teclado y accesibilidad.
-final class PillButton: NSButton {
-    convenience init(title: String) {
-        self.init(frame: .zero)
-        self.title = title
-    }
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        isBordered = false
-        font = scaledFont(13)
-        focusRingType = .none
-        contentTintColor = .labelColor
-    }
-    required init?(coder: NSCoder) { fatalError() }
-
-    override var intrinsicContentSize: NSSize {
-        let titleSize = title.size(withAttributes: [.font: font ?? scaledFont(13)])
-        let imageWidth = image == nil ? 0 : scaled(6) + (image?.size.width ?? 0)
-        return NSSize(width: max(scaled(40), titleSize.width + imageWidth + scaled(16)),
-                      height: max(scaled(24), titleSize.height + scaled(10)))
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        let pressed = (cell as? NSButtonCell)?.isHighlighted ?? false
-        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
-        let path = NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2)
-        (pressed ? PinVolPalette.buttonFillPressed : PinVolPalette.buttonFill).setFill()
-        path.fill()
-        PinVolPalette.buttonBorder.setStroke()
-        path.lineWidth = 1
-        path.stroke()
-        super.draw(dirtyRect)
-        if window?.firstResponder === self {
-            NSColor.keyboardFocusIndicatorColor.setStroke()
-            let ring = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5),
-                                    xRadius: (bounds.height - 3) / 2, yRadius: (bounds.height - 3) / 2)
-            ring.lineWidth = 2
-            ring.stroke()
-        }
     }
 }
 

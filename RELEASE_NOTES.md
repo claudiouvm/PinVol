@@ -1,14 +1,14 @@
-# PinVol 1.13
+# PinVol 1.14
 
 ## English
 
 Keeps the volume of the apps you choose fixed, no matter what the system volume is.
 
-**What's new since 1.12**
+**What's new since 1.13**
 
-- **PinVol is now a menu-bar app.** It no longer shows a Dock icon and does not appear in ⌘Tab. Open the window from the menu bar icon or press **⌥⌘P** from any app.
-- The **Show in the Dock** and **Show in the menu bar** settings are gone; the menu bar icon is always there.
-- Everything else stays: pin apps with ⌘O, remove with ⌫ and undo with ⌘Z, VoiceOver announcements, the custom slider and the buttons that grow with the text.
+- **Native buttons are back.** The custom pill style is gone; buttons look and behave like macOS controls again, and the cup in **Buy me a coffee!** now fits inside its button.
+- The permission error can show its full explanation (up to four lines) instead of being cut off.
+- Everything else stays: menu-bar-only, pin apps with ⌘O, remove with ⌫ and undo with ⌘Z, VoiceOver announcements and the high-contrast slider.
 
 **Requires** macOS 26 (Tahoe) or later, on a Mac with Apple silicon (M1 or later). On macOS 14.2–15 use [1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2); on an Intel Mac, [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1).
 
@@ -22,11 +22,11 @@ xattr -dr com.apple.quarantine /Applications/PinVol.app
 
 Mantiene fijo el volumen de las apps que elijas, sin importar el volumen del sistema.
 
-**Novedades desde la 1.12**
+**Novedades desde la 1.13**
 
-- **PinVol ahora es una app de barra de menús.** Ya no muestra ícono en el Dock ni aparece en ⌘Tab. Abre la ventana desde el ícono de la barra o pulsa **⌥⌘P** desde cualquier app.
-- Los ajustes **Mostrar en el Dock** y **Mostrar en la barra de menús** desaparecen; el ícono de la barra siempre está.
-- Lo demás sigue igual: fija apps con ⌘O, quítalas con ⌫ y deshaz con ⌘Z, anuncios de VoiceOver, el slider propio y los botones que crecen con el texto.
+- **Vuelven los botones nativos.** El estilo de píldora propio desaparece; los botones se ven y se comportan como controles de macOS, y la taza de **¡Invítame un café!** ya cabe dentro de su botón.
+- El error de permiso puede mostrar su explicación completa (hasta cuatro líneas) en vez de quedar cortado.
+- Lo demás sigue igual: solo barra de menús, fija apps con ⌘O, quítalas con ⌫ y deshaz con ⌘Z, anuncios de VoiceOver y el slider de alto contraste.
 
 **Requiere** macOS 26 (Tahoe) o posterior, en un Mac con Apple silicon (M1 o posterior). En macOS 14.2–15 usa la [1.2](https://github.com/claudiouvm/PinVol/releases/tag/v1.2); en un Mac Intel, la [1.1](https://github.com/claudiouvm/PinVol/releases/tag/v1.1).
 

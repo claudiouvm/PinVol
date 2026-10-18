@@ -79,12 +79,12 @@ La ventana apunta a **WCAG 2.2 AA** y a las HIG de macOS:
 - La ventana se dimensiona con la pestaña más alta (Apps, Ajustes o Acerca de), así que cambiar de pestaña no la redimensiona; un separador flexible mantiene el pie abajo y Acerca de usa la misma cabecera y alineación izquierda que el resto.
 - **⌥⌘P** abre o trae la ventana desde cualquier app. PinVol es una app de barra de menús: no tiene ícono en el Dock ni aparece en ⌘Tab.
 - El texto sigue el tamaño de cuerpo del sistema y se puede forzar con `PV_TEXT_SCALE`; la ventana se redimensiona, hace scroll si el contenido no cabe y omite las animaciones con «Reducir movimiento».
-- Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste. La barra de pestañas es propia (`TabBar`) para que la etiqueta seleccionada garantice 4,5:1, algo que el control segmentado del sistema no permite. El slider usa `ContrastSliderCell` (track y knob ≥3:1) y los botones de acción usan `PillButton`, cuyo bisel crece con el texto.
+- Los colores que dibuja la app están en `PinVolPalette` (`Style.swift`) y mantienen 3:1 contra la tarjeta (WCAG 1.4.11); los del texto siguen el ajuste de alto contraste. La barra de pestañas es propia (`TabBar`) para que la etiqueta seleccionada garantice 4,5:1, algo que el control segmentado del sistema no permite. El slider usa `ContrastSliderCell` (track y knob ≥3:1); los botones de acción son `NSButton` nativos.
 - Añadir apps no depende de arrastrar: **Fijar app…** (⌘O) abre el panel del sistema, y **Quitar app** (⌫) con **⌘Z** cubren el teclado.
 
 `tools/test-a11y.sh` compila la variante `-DSNAPSHOT` y ejecuta `--selftest-contrast` (fórmula WCAG sobre la paleta, claro y oscuro) y `--selftest-a11y` (nombres, imágenes decorativas, botones de solo ícono de 24 pt, foco inicial y títulos de botones, con el texto al 100 % y al 150 %). El CI lo ejecuta. Para una pasada visual: `PV_TEXT_SCALE=2 ./snapshot.sh` genera la ventana al 200 %.
 
-Límites conocidos: PinVol es una app de barra de menús por diseño. No tiene ícono en el Dock ni entrada en ⌘Tab; la ventana se abre desde el ícono de la barra o con ⌥⌘P. La interfaz corre en un proceso aparte y termina al cerrar la ventana.
+Límites conocidos: PinVol es una app de barra de menús por diseño. No tiene ícono en el Dock ni entrada en ⌘Tab; la ventana se abre desde el ícono de la barra o con ⌥⌘P. La interfaz corre en un proceso aparte y termina al cerrar la ventana. Las etiquetas de los botones usan el bisel nativo y el tamaño de control del sistema, así que crecen menos que el resto del texto con `PV_TEXT_SCALE`.
 
 Ver [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) para la auditoría que dio origen a esto.
 
