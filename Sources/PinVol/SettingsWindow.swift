@@ -34,8 +34,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private let root = NSStackView()
     private let header = NSStackView()
     private let updateBanner = NSButton()
-    private let tabs = NSSegmentedControl(labels: Tab.allCases.map { $0.title }, trackingMode: .selectOne,
-                                          target: nil, action: nil)
+    private let tabs = TabBar(titles: Tab.allCases.map { $0.title })
     private let appsPage = NSStackView()
     private let settingsPage = NSStackView()
     private let aboutPage = NSStackView()
@@ -236,11 +235,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         updateBanner.isHidden = true
 
         // Pestañas
-        tabs.target = self
-        tabs.action = #selector(tabChanged)
-        tabs.segmentDistribution = .fillEqually
-        tabs.font = scaledFont(13)
-        tabs.selectedSegment = Tab.apps.rawValue
+        tabs.onSelect = { [weak self] index in self?.showTab(Tab(rawValue: index) ?? .apps, animated: true) }
+        tabs.select(Tab.apps.rawValue)
 
         // Interruptores
         for (sw, title, action) in [(enableSwitch, L("Keep levels fixed"), #selector(enabledChanged)),
@@ -390,7 +386,13 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         let github = NSButton(title: L("Source code on GitHub"), target: self, action: #selector(openGitHub))
         github.isBordered = false
         github.contentTintColor = .linkColor
-        github.font = scaledFont(12)
+        // Subrayado: el enlace no puede distinguirse solo por el color (WCAG 1.4.1).
+        github.attributedTitle = NSAttributedString(string: L("Source code on GitHub"), attributes: [
+            .font: scaledFont(12),
+            .foregroundColor: NSColor.linkColor,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+        ])
+        github.setAccessibilityLabel(L("Source code on GitHub"))
 
         let coffee = NSButton(title: L("Buy me a coffee!"), image: symbol("cup.and.saucer.fill", size: scaled(12)) ?? NSImage(),
                               target: self, action: #selector(openDonate))
@@ -415,7 +417,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private func showTab(_ t: Tab, animated: Bool) {
         let changed = t != tab
         tab = t
-        tabs.selectedSegment = t.rawValue
+        tabs.select(t.rawValue)
         let pages = [appsPage, settingsPage, aboutPage]
         for (i, page) in pages.enumerated() {
             page.isHidden = i != t.rawValue
@@ -650,8 +652,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private func dropped(_ urls: [URL]) {
         let wasEnabled = backend.state.enabled
         var known = Set(backend.state.apps.map { $0.id })
-        var added = 0, repeated = 0, unreadable = 0, overflow = 0
+        var added = 0, repeated = 0, unreadable = 0, overflow = 0, notApp = 0
         for url in urls {
+            guard url.pathExtension.lowercased() == "app" else { notApp += 1; continue }
             guard let id = Bundle(url: url)?.bundleIdentifier else { unreadable += 1; continue }
             if known.contains(id) { repeated += 1; continue }
             if known.count >= maxPinnedApps { overflow += 1; continue }
@@ -663,6 +666,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             flash(L("Maximum %ld apps: remove one to add another", maxPinnedApps))
         } else if added > 0 && !wasEnabled {
             flash(L("Fixed levels are on now"))
+        } else if added == 0 && notApp > 0 {
+            flash(L("Only .app bundles can be pinned"))
         } else if added == 0 && unreadable > 0 {
             flash(L("Couldn't read that app"), kind: .error)
         } else if added == 0 && repeated > 0 {
@@ -686,7 +691,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         flash(L("App added back"))
     }
 
-    @objc private func tabChanged() { showTab(Tab(rawValue: tabs.selectedSegment) ?? .apps, animated: true) }
     @objc private func enabledChanged() { backend.setEnabled(enableSwitch.state == .on) }
     @objc private func dockChanged() { backend.setShowDock(dockSwitch.state == .on) }
     @objc private func menuBarChanged() { backend.setShowMenuBar(menuBarSwitch.state == .on) }

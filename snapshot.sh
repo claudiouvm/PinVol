@@ -24,14 +24,14 @@ BIN="$APP/Contents/MacOS/PinVol"
 run() {
   local name=$1 code=0 msg=""; shift
   for attempt in {1..30}; do
-    msg=$("$BIN" -AppleLanguages "($lang)" --snapshot "$OUT/$lang/$name.png" "$@" 2>&1) && code=0 || code=$?
+    msg=$("$BIN" -AppleLanguages "($lang)" -AppleLocale "$LOCALE" --snapshot "$OUT/$lang/$name.png" "$@" 2>&1) && code=0 || code=$?
     if [[ $code -ne 3 ]]; then break; fi
     echo "  $lang/$name, intento $attempt: ${msg##*$'\n'}"
     sleep 2
   done
   if [[ $code -eq 3 ]]; then
     echo "aviso: $lang/$name con íconos sin generar tras 30 intentos"
-    "$BIN" -AppleLanguages "($lang)" --snapshot "$OUT/$lang/$name.png" --force "$@" >/dev/null 2>&1 && code=0 || code=$?
+    "$BIN" -AppleLanguages "($lang)" -AppleLocale "$LOCALE" --snapshot "$OUT/$lang/$name.png" --force "$@" >/dev/null 2>&1 && code=0 || code=$?
   fi
   if [[ $code -ne 0 ]]; then echo "falló $lang/$name"; fi
 }
@@ -50,6 +50,8 @@ FIVE=$(gains $LEVELS)
 ONE=$(gains 0.45)
 
 for lang in ${=LANGS}; do
+  # Región fija en las capturas: así los números no dependen de la región del runner («45%» y «11,9 dB»).
+  if [[ "$lang" == "es" ]]; then LOCALE=es_CL; else LOCALE=en_US; fi
   mkdir -p "$OUT/$lang"
   run light-empty
   run light-assigned   --assigned com.apple.Music --level 0.45 --gains $ONE --on --status active

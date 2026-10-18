@@ -345,21 +345,22 @@ final class AppsPanel: NSView {
 
     // MARK: Arrastrar y soltar
 
-    private func appURLs(_ info: NSDraggingInfo) -> [URL] {
-        let urls = info.draggingPasteboard.readObjects(forClasses: [NSURL.self],
-                                                       options: [.urlReadingFileURLsOnly: true]) as? [URL]
-        return (urls ?? []).filter { $0.pathExtension == "app" }
+    /// Cualquier archivo se acepta al arrastrar: si no es una app, la ventana lo explica en vez de vetar el
+    /// arrastre en silencio con el cursor de prohibido.
+    private func fileURLs(_ info: NSDraggingInfo) -> [URL] {
+        info.draggingPasteboard.readObjects(forClasses: [NSURL.self],
+                                            options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
     }
 
     override func draggingEntered(_ s: NSDraggingInfo) -> NSDragOperation {
-        guard shownIDs.count < maxPinnedApps, !appURLs(s).isEmpty else { return [] }
+        guard shownIDs.count < maxPinnedApps, !fileURLs(s).isEmpty else { return [] }
         drop.highlighted = true
         return .copy
     }
     override func draggingExited(_ s: NSDraggingInfo?) { drop.highlighted = false }
     override func performDragOperation(_ s: NSDraggingInfo) -> Bool {
         drop.highlighted = false
-        let urls = appURLs(s)
+        let urls = fileURLs(s)
         guard !urls.isEmpty else { return false }
         onDrop?(urls)
         return true

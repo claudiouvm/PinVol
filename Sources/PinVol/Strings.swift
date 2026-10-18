@@ -7,8 +7,15 @@ import Foundation
 // sale en español; con cualquier otro idioma sale en inglés. `tools/check-strings.py` comprueba que cada texto tenga
 // su traducción (lo ejecuta el CI).
 
-/// Locale del idioma que usa la interfaz (no el de la región del Mac): así los números salen coherentes con los textos.
-let uiLocale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+/// Locale del idioma de la interfaz con la región del Mac: el texto va en el idioma preferido y los números
+/// siguen la región, como hace macOS (es-CL: «45%» y «11,9 dB»; es-ES: «45 %»).
+let uiLocale: Locale = {
+    let language = Bundle.main.preferredLocalizations.first ?? "en"
+    if let region = Locale.current.region?.identifier, !region.isEmpty {
+        return Locale(identifier: "\(language)_\(region)")
+    }
+    return Locale(identifier: language)
+}()
 
 /// Texto de la interfaz en el idioma del Mac. `args` rellena los especificadores de formato del texto (%@, %ld, %d…).
 func L(_ key: String, _ args: CVarArg...) -> String {

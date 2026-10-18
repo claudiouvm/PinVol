@@ -65,6 +65,34 @@ enum PinVolPalette {
     /// El `×` y el borde de la zona de arrastre no son decorativos: usan el color de etiqueta secundaria,
     /// que ronda 10:1 en ambos modos y se refuerza con «Aumentar contraste».
     static var controlOutline: NSColor { .secondaryLabelColor }
+
+    /// Acento del sistema oscurecido lo justo para que el texto blanco del segmento seleccionado llegue a 4,5:1.
+    /// Conserva el tono que eligió el usuario; solo baja el brillo.
+    static func accessibleAccent(for appearance: NSAppearance) -> NSColor {
+        var base = NSColor.controlAccentColor
+        appearance.performAsCurrentDrawingAppearance {
+            base = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? .controlAccentColor
+        }
+        let white = NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)
+        var fraction: CGFloat = 0
+        var candidate = base
+        while contrastRatio(white, candidate) < 4.5, fraction < 0.6 {
+            fraction += 0.05
+            candidate = base.blended(withFraction: fraction, of: .black)?.usingColorSpace(.sRGB) ?? base
+        }
+        return candidate
+    }
+}
+
+/// Contraste WCAG entre dos colores ya resueltos (sin transparencia).
+func contrastRatio(_ a: NSColor, _ b: NSColor) -> CGFloat {
+    func linear(_ v: CGFloat) -> CGFloat { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+    func luminance(_ color: NSColor) -> CGFloat {
+        let c = color.usingColorSpace(.sRGB) ?? color
+        return 0.2126 * linear(c.redComponent) + 0.7152 * linear(c.greenComponent) + 0.0722 * linear(c.blueComponent)
+    }
+    let la = luminance(a), lb = luminance(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
 }
 
 /// Relleno de las tarjetas: blanco en claro, velo translúcido en oscuro (como Ajustes del Sistema).
@@ -219,4 +247,84 @@ func formRow(_ title: String, detailLabel: NSTextField?, control: NSView) -> NSV
         row.heightAnchor.constraint(equalToConstant: scaled(detailLabel == nil ? 44 : 54)),
     ])
     return row
+}
+
+// MARK: - Barra de pestañas
+
+/// Barra propia en lugar de `NSSegmentedControl`: el control del sistema dibuja el texto del segmento
+/// seleccionado en blanco sobre el acento y no permite cambiar ese color. Aquí el fondo del segmento se
+/// oscurece lo justo para que el texto blanco llegue a 4,5:1, conservando el tono del acento del usuario.
+final class TabBar: NSView {
+    var onSelect: ((Int) -> Void)?
+    private var buttons: [NSButton] = []
+    private let titles: [String]
+    private var selectedIndex = 0
+
+    init(titles: [String]) {
+        self.titles = titles
+        super.init(frame: .zero)
+        let stack = NSStackView()
+        stack.orientation = .horizontal
+        stack.distribution = .fillEqually
+        stack.alignment = .centerY
+        stack.spacing = 0
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+        for (i, title) in titles.enumerated() {
+            let b = NSButton(title: title, target: self, action: #selector(tapped(_:)))
+            b.tag = i
+            b.isBordered = false
+            b.setAccessibilityRole(.radioButton)
+            b.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            stack.addArrangedSubview(b)
+            buttons.append(b)
+        }
+        updateTitles()
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: scaled(28)) }
+
+    func select(_ index: Int) {
+        selectedIndex = max(0, min(index, buttons.count - 1))
+        updateTitles()
+        needsDisplay = true
+    }
+
+    @objc private func tapped(_ sender: NSButton) { onSelect?(sender.tag) }
+
+    private func updateTitles() {
+        for (i, b) in buttons.enumerated() {
+            let isSelected = i == selectedIndex
+            b.attributedTitle = NSAttributedString(string: titles[i], attributes: [
+                .font: scaledFont(13, weight: isSelected ? .semibold : .regular),
+                .foregroundColor: isSelected ? NSColor.white : NSColor.labelColor,
+            ])
+            b.setAccessibilityLabel(titles[i])
+            b.setAccessibilityValue(NSNumber(value: isSelected ? 1 : 0))
+        }
+    }
+
+    override func layout() {
+        super.layout()
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
+        NSColor.quaternaryLabelColor.setFill()
+        path.fill()
+        guard selectedIndex < buttons.count else { return }
+        let frame = buttons[selectedIndex].frame.insetBy(dx: 1, dy: 1)
+        guard frame.width > 0, frame.height > 0 else { return }
+        let selected = NSBezierPath(roundedRect: frame, xRadius: 6, yRadius: 6)
+        PinVolPalette.accessibleAccent(for: effectiveAppearance).setFill()
+        selected.fill()
+    }
 }

@@ -62,7 +62,7 @@ macOS marks a login-item launch in the open-application Apple event, but not alw
 The interface is in English and Spanish and follows the Mac's language: Spanish when it is the preferred language, English in any other case (English is also the fallback).
 
 - Every user-facing text goes through `L("English text")` (`Strings.swift`): the English text is the key. `Resources/es.lproj/Localizable.strings` holds the Spanish translation, and `InfoPlist.strings` (in `en.lproj` and `es.lproj`) the localized texts of `Info.plist`, such as the audio-permission prompt. Formats use `%@` and `%ld`.
-- Numbers follow the interface language, not the Mac's region: `45%` and `+11.9 dB` in English, `45 %` and `+11,9 dB` in Spanish.
+- Numbers follow the interface language and the Mac's region, as macOS does: `45%` and `+11.9 dB` with English (US), `45%` and `+11,9 dB` with Spanish (Chile), `45 %` with Spanish (Spain). The captures pin the region (`-AppleLocale en_US` / `es_CL`) so they do not depend on the runner.
 - To add a text, use `L("…")` in the code and add its line to `es.lproj/Localizable.strings`. `tools/check-strings.py` (the CI runs it too) fails if a text has no translation, if a translation is no longer used or if the format specifiers differ.
 - To add a language, create `Resources/<code>.lproj/` with the same two files and add the code to `CFBundleLocalizations` in `Info.plist`; the script checks it all.
 - To try a language without changing the Mac's, run the binary with `-AppleLanguages "(es)"`, or set it for PinVol only in System Settings → General → Language & Region → Applications.
@@ -76,13 +76,14 @@ The window targets **WCAG 2.2 AA** and the macOS HIG:
 - Status is written, not only colored: every row says `Active`, `Waiting…`, `Error`… and an error's explanation is visible, with **Open System Settings** and **Retry**, instead of living in a tooltip.
 - Brief messages (footer, menu bar) are posted as accessibility announcements, so VoiceOver users hear them.
 - Icon-only buttons are at least 24×24 pt (the removal button is 24×24).
+- **⌥⌘P** opens or raises the window from any app: the interface is a separate process and does not appear in ⌘Tab.
 - Text follows the system body size and can be forced with `PV_TEXT_SCALE`; the window is resizable, scrolls when the content does not fit, and skips animations when Reduce Motion is on.
-- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting.
+- Colors drawn by the app live in `PinVolPalette` (`Style.swift`) and keep at least 3:1 against the card (WCAG 1.4.11); system text colors follow the high-contrast setting. The tab bar is custom (`TabBar`) so the selected label guarantees 4.5:1, which the system segmented control does not allow.
 - Adding apps does not depend on dragging: **Pin App…** (⌘O) opens the standard panel, and **Remove App** (⌫) plus **⌘Z** cover the keyboard.
 
 `tools/test-a11y.sh` builds the `-DSNAPSHOT` variant and runs `--selftest-contrast` (WCAG math on the palette, light and dark) and `--selftest-a11y` (names, decorative images, 24 pt icon-only buttons, initial focus and button titles, at 100 % and 150 % text). The CI runs it. For a visual pass: `PV_TEXT_SCALE=2 ./snapshot.sh` renders the window at 200 %. The VoiceOver pass is manual: walk the window, pin an app with ⌘O, deny the audio permission, remove an app with ⌫ and undo with ⌘Z.
 
-Known limits: the selected tab segment and the slider track are drawn by AppKit with the accent color (≈4.15:1 with the default blue, below 4.5:1 for the 13 pt label); button bezels use the system control sizes, so their labels grow less than the rest of the text.
+Known limits: the slider track is drawn by AppKit; button bezels use the system control sizes, so their labels grow less than the rest of the text. The interface instance does not appear in ⌘Tab (⌥⌘P and the Dock/menu bar are the ways in); putting it there would mean merging it with the resident process and losing the memory optimization.
 
 See [`AUDITORIA-ACCESIBILIDAD.md`](AUDITORIA-ACCESIBILIDAD.md) for the audit behind this.
 

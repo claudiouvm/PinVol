@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import os
 import ServiceManagement
 
@@ -13,6 +14,8 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var markedAsLoginItem = false   // macOS marcó el evento de apertura como «elemento de inicio de sesión»
     private var quietStart = false          // arrancó sola al iniciar sesión y ya hay apps fijadas: sin ventana
     private var barNote: DispatchWorkItem?  // retira el mensaje junto al ícono de la barra de menús
+    private var hotKeyRef: EventHotKeyRef?
+    private var hotKeyHandler: EventHandlerRef?
     private let launchedAt = Date()
     private let launchLog = Logger(subsystem: "com.claudiouvm.pinvol", category: "launch")
 
@@ -27,7 +30,8 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ n: Notification) {
-        let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "")
+        let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "p")
+        show.keyEquivalentModifierMask = [.command, .option]
         show.target = self
         installMainMenu(quitAction: #selector(NSApplication.terminate(_:)), quitTitle: L("Quit PinVol"), extra: [show])
         model.onStatus = { [weak self] in self?.statusChanged() }
@@ -37,6 +41,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         model.onInstalled = { [weak self] in self?.relaunch() }
         model.start()
         applyPresence()
+        registerGlobalShortcut()
         #if SNAPSHOT
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             devLog("residente: dock=\(self?.model.showDock ?? false) barra=\(self?.statusItem != nil) política=\(NSApp.activationPolicy().rawValue)")
@@ -86,7 +91,32 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationWillTerminate(_ n: Notification) {
+        if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
+        if let hotKeyHandler { RemoveEventHandler(hotKeyHandler) }
         IPC.post(IPC.toUI, ["bye": true])
+    }
+
+    /// ⌥⌘P funciona con PinVol en segundo plano: la ventana se abre o se trae al frente sin pasar por el Dock
+    /// ni por la barra de menús. La instancia de interfaz no sale en ⌘Tab (es otra app, sin ícono propio).
+    private func registerGlobalShortcut() {
+        var ref: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(signature: OSType(0x506E566C), id: 1)   // 'PnVl'
+        let status = RegisterEventHotKey(UInt32(kVK_ANSI_P), UInt32(cmdKey | optionKey), hotKeyID,
+                                         GetApplicationEventTarget(), 0, &ref)
+        guard status == noErr, let ref else {
+            launchLog.notice("no se pudo registrar ⌥⌘P: \(status, privacy: .public)")
+            return
+        }
+        hotKeyRef = ref
+        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        let handler: EventHandlerUPP = { _, _, userData in
+            guard let userData else { return noErr }
+            let delegate = Unmanaged<ResidentDelegate>.fromOpaque(userData).takeUnretainedValue()
+            DispatchQueue.main.async { delegate.showWindow() }
+            return noErr
+        }
+        InstallEventHandler(GetApplicationEventTarget(), handler, 1, &spec, context, &hotKeyHandler)
     }
 
     // MARK: Presencia: Dock y barra de menús
@@ -153,7 +183,8 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         head.image = dot(st.kind)
         menu.addItem(head)
         menu.addItem(.separator())
-        let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "")
+        let show = NSMenuItem(title: L("Show PinVol"), action: #selector(showWindow), keyEquivalent: "p")
+        show.keyEquivalentModifierMask = [.command, .option]
         show.target = self
         menu.addItem(show)
         if forMenuBar {

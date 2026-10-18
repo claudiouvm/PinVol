@@ -136,3 +136,4 @@
 "Help" = "Ayuda";
 "PinVol Help" = "Ayuda de PinVol";
 "Lower the Mac's volume: this app stays the same." = "Baja el volumen del Mac: esta app sigue igual.";
+"Only .app bundles can be pinned" = "Solo se pueden fijar apps (.app)";

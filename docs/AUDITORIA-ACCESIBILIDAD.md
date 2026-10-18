@@ -121,7 +121,7 @@ Severidad: **B** bloqueante, **A** alta, **M** media, **b** baja.
 | M2 | b | Minimizar y zoom ocultos, sin título de ventana; desviación menor de HIG. | `SettingsWindow.swift:268-275` |
 | M3 | b | "Descargar PinVol X…" con puntos suspensivos cuando no abre ningún diálogo. | `main.swift:168` |
 | M4 | b | "<3" literal en Acerca de. | `SettingsWindow.swift:289` |
-| M5 | b | Números por idioma y no por región: en es-CL el sistema escribe "45 %" y la app "45 %"; en otras regiones discrepa. Decisión documentada. | `Strings.swift:11-16` |
+| M5 | b | Números por idioma y no por región: con el Mac en es-CL el sistema escribe "45%" y la app "45 %"; en otras regiones discrepa. Decisión documentada. | `Strings.swift:11-16` |
 | M6 | M | Cero cobertura de accesibilidad: sin pruebas de teclado/VO, sin capturas con texto grande y sin sección en docs; CI solo valida traducciones. | `.github/workflows/release.yml` |
 
 ## Contraste medido
@@ -193,3 +193,17 @@ build/PinVol-snap.app/Contents/MacOS/PinVol -AppleLanguages "(es)" --snapshot ou
 ```
 
 El detalle de las opciones está al principio de `Sources/PinVol/Snapshot.swift`.
+
+## Estado de los hallazgos posteriores al informe
+
+Corregidos en la rama `audit/accesibilidad-ux` (PR #20), después de la primera tanda de correcciones:
+
+| Hallazgo | Estado | Cómo se resolvió |
+|---|---|---|
+| A6 | Corregido | Cualquier archivo se acepta al arrastrar; si no es una app, la ventana lo dice («Solo se pueden fijar apps (.app)») en vez de vetar el arrastre en silencio. |
+| V10 | Corregido | El enlace de GitHub lleva subrayado y rótulo accesible, no solo color. |
+| C6 | Corregido | `NSSegmentedControl` se sustituyó por una barra propia (`TabBar`) porque el control del sistema no permite cambiar el color del segmento; el acento se oscurece hasta 4,5:1 (medido: 4,67:1). |
+| U9 | Mitigado | La interfaz sigue sin aparecer en ⌘Tab (es otro proceso sin ícono propio), pero ⌥⌘P abre o trae la ventana desde cualquier app. Aparecer en ⌘Tab exigiría fusionar la interfaz con la residente y perder la optimización de memoria. |
+| M5 | Corregido | Los números usan idioma + región del Mac (`es_CL` → «45 %» pasa a «45%» y «11,9 dB»); las capturas fijan la región con `-AppleLocale`. |
+
+Comprobado con `tools/test-a11y.sh` (contraste y árbol AX en 9 estados, al 100 % y 150 %) y `snapshot.sh`; ambos en el CI.

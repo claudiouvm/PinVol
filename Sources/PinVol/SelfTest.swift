@@ -179,6 +179,12 @@ func runContrastSelfTest() -> Never {
         check("\(appearanceName): texto",
               resolved(.labelColor, appearance, over: background), background, minimum: 4.5)
     }
+    // El texto blanco del segmento seleccionado de las pestañas: el acento se oscurece hasta 4,5:1.
+    for (appearanceName, appearance) in [("claro", NSAppearance(named: .aqua)!), ("oscuro", NSAppearance(named: .darkAqua)!)] {
+        check("\(appearanceName): texto de la pestaña seleccionada",
+              NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 1),
+              PinVolPalette.accessibleAccent(for: appearance), minimum: 4.5)
+    }
     print(failures == 0 ? "OK: contraste" : "\(failures) problema(s) de contraste")
     exit(failures == 0 ? 0 : 1)
 }
