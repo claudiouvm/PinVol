@@ -311,15 +311,15 @@ final class AccessibilitySelfTestDelegate: NSObject, NSApplicationDelegate {
                     if !title.isEmpty && button.intrinsicContentSize.width > button.frame.width + 2 {
                         problems.append("\(context): botón recortado «\(title)»")
                     }
-                } else if let slider = view as? NSSlider {
+                } else if view is NSSlider {
                     if label.isEmpty { problems.append("\(context): slider sin nombre") }
-                } else if let toggle = view as? NSSwitch {
+                } else if view is NSSwitch {
                     if label.isEmpty { problems.append("\(context): interruptor sin nombre") }
                 } else if let image = view as? NSImageView {
                     if image.isAccessibilityElement() && label.isEmpty {
                         problems.append("\(context): imagen sin descripción")
                     }
-                } else if let progress = view as? NSProgressIndicator {
+                } else if view is NSProgressIndicator {
                     if label.isEmpty { problems.append("\(context): progreso sin nombre") }
                 }
             }

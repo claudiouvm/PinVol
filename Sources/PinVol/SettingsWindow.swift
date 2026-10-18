@@ -376,10 +376,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     private func buildAbout() {
-        let info = Bundle.main.infoDictionary
-        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
-        let channel = (info?["PinVolReleaseChannel"] as? String).map { "\($0) " } ?? ""
-
         // Mismo esqueleto que Ajustes: la cabecera de la ventana ya muestra el ícono y el nombre; aquí van
         // la versión (en la fila de actualizaciones), la autoría y los enlaces, alineados como el resto.
         let madeIn = makeLabel(L("Made in Chile by Claudiouvm and Claude ♥"), size: 12, color: .secondaryLabelColor)

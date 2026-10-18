@@ -3,7 +3,7 @@ import AppKit
 // MARK: - Zona de arrastre
 //
 // Una sola zona que se adapta a cuántas apps hay:
-//  · sin apps: tarjeta grande con instrucciones y un botón «Añadir app…» (140 pt);
+//  · sin apps: tarjeta grande con instrucciones y un botón «Añadir app…» (168 pt);
 //  · con 1 a 4 apps: franja compacta bajo la lista, que es un botón (44 pt);
 //  · con 5 apps: se oculta y la lista ocupa su sitio.
 // Toda la tarjeta se puede pulsar, pero el control accesible es el botón: así se puede añadir una app
