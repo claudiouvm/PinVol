@@ -106,6 +106,8 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = menuBarImage(active: barActive)
         item.button?.toolTip = "PinVol"
+        item.button?.setAccessibilityLabel("PinVol")
+        item.button?.setAccessibilityHelp(model.summary.text)
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu   // clic → menú desplegable, como cualquier ícono de la barra
@@ -126,6 +128,7 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func statusChanged() {
         let active = model.anyActive
+        statusItem?.button?.setAccessibilityHelp(model.summary.text)
         if active != barActive {
             barActive = active
             statusItem?.button?.image = menuBarImage(active: active)
@@ -261,6 +264,8 @@ final class ResidentDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         barNote = clear
         DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: clear)
+        // El mensaje solo se ve 4 s al lado del ícono: se anuncia también a VoiceOver.
+        announce(text)
     }
 
     // MARK: Ventana (otra instancia)

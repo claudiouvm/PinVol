@@ -16,6 +16,16 @@ func makeLabel(_ text: String = "", size: CGFloat = 13, weight: NSFont.Weight = 
     return l
 }
 
+/// Anuncia un mensaje a las tecnologías de asistencia (VoiceOver) sin mover el foco.
+/// Los mensajes del pie y de la barra de menús duran pocos segundos: sin esto, quien no ve la pantalla
+/// no se entera de que una app se añadió o de que algo falló.
+func announce(_ text: String, priority: NSAccessibilityPriorityLevel = .medium) {
+    guard !text.isEmpty else { return }
+    let element: Any = NSApp.mainWindow ?? NSApplication.shared
+    NSAccessibility.post(element: element, notification: .announcementRequested,
+                         userInfo: [.announcement: text, .priority: priority.rawValue])
+}
+
 func symbol(_ name: String, size: CGFloat, weight: NSFont.Weight = .regular) -> NSImage? {
     NSImage(systemSymbolName: name, accessibilityDescription: nil)?
         .withSymbolConfiguration(.init(pointSize: size, weight: weight))

@@ -22,6 +22,7 @@ final class StaticBackend: Backend {
     init(state: AppState) { self.state = state }
     func assign(_ id: String) {}
     func remove(_ id: String) {}
+    func retry(_ id: String) {}
     func setLevel(_ id: String, _ v: Float) {}
     func setEnabled(_ on: Bool) {}
     func setShowDock(_ on: Bool) {}

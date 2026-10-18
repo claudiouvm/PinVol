@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import UniformTypeIdentifiers
 
 // MARK: - Ventana de ajustes
 //
@@ -48,6 +49,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private var tab = Tab.apps
     private var sized = false
     private var flashItem: DispatchWorkItem?
+    private var suppressAnnouncement = false
+    private var announcedKind: EngineStatus.Kind?
+    private var announcedText = ""
+    private var announcedUpdateKind: UpdateState.Kind?
     private var resizeTimer: Timer?
     private var resizeTarget: CGFloat = 0
     private static let resizeDuration: TimeInterval = 0.25
@@ -73,6 +78,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()   // delante de otras ventanas aunque macOS no conceda la activación
+        if window.initialFirstResponder == nil {
+            window.initialFirstResponder = panel.firstFocusable
+            window.makeFirstResponder(window.initialFirstResponder)
+        }
     }
 
     /// Elige la pestaña por nombre (apps, settings, about). Sin `animated` es la pestaña inicial (y la de las capturas).
@@ -211,7 +220,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
         // Pestaña Apps
         panel.onDrop = { [weak self] urls in self?.dropped(urls) }
+        panel.onAdd = { [weak self] in self?.addApp() }
         panel.onRemove = { [weak self] id in self?.removeApp(id) }
+        panel.onRetry = { [weak self] id in self?.backend.retry(id) }
+        panel.onOpenSettings = { [weak self] _ in self?.openAudioSettings() }
         panel.onLevel = { [weak self] id, v in self?.backend.setLevel(id, v) }
         let enableCard = Card(rows: [
             formRow(L("Keep levels fixed"), detail: L("Offsets your Mac's system volume"), control: enableSwitch),
@@ -352,6 +364,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         loginSwitch.state = SMAppService.mainApp.status == .enabled ? .on : .off
         applyUpdate(st.update)
         apply(st.summary)
+        if window.initialFirstResponder == nil { window.initialFirstResponder = panel.firstFocusable }
         fitWindow(animated: true)
     }
 
@@ -360,19 +373,32 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         apply(st.summary)
     }
 
-    func apply(_ s: EngineStatus) {
+    func apply(_ s: EngineStatus, announceChange: Bool = true) {
         statusLabel.stringValue = s.text
         statusLabel.toolTip = s.detail ?? s.text
         statusDot.contentTintColor = statusColor(s.kind)
+
+        let kindChanged = s.kind != announcedKind
+        let newDetail = (s.kind == .error || s.kind == .warning) && s.text != announcedText
+        announcedKind = s.kind
+        announcedText = s.text
+        guard announceChange, !suppressAnnouncement, window.isVisible, kindChanged || newDetail else { return }
+        let message = [s.text, s.detail].compactMap { $0 }.joined(separator: ". ")
+        announce(message, priority: s.kind == .error ? .high : .medium)
     }
 
     /// Mensaje breve en el pie; a los 3 s vuelve el estado normal.
     private func flash(_ text: String, kind: EngineStatus.Kind = .warning, detail: String? = nil) {
+        suppressAnnouncement = true
         apply(EngineStatus(kind: kind, text: text, detail: detail))
+        suppressAnnouncement = false
+        announce([text, detail].compactMap { $0 }.joined(separator: ". "), priority: kind == .error ? .high : .medium)
         flashItem?.cancel()
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
+            self.suppressAnnouncement = true
             self.apply(self.backend.state.summary)
+            self.suppressAnnouncement = false
         }
         flashItem = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: item)
@@ -421,6 +447,11 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         updateButton.isEnabled = enabled
         updateDetail.textColor = color
         updateDetail.toolTip = updateDetail.stringValue
+        if window.isVisible, u.kind != announcedUpdateKind,
+           [.available, .ready, .failed, .upToDate].contains(u.kind) {
+            announce(updateDetail.stringValue, priority: u.kind == .failed ? .high : .medium)
+        }
+        announcedUpdateKind = u.kind
 
         switch u.kind {
         case .available: updateBanner.title = L("Version %@ available · Download", latest)
@@ -454,6 +485,41 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     @objc private func openGitHub() { NSWorkspace.shared.open(UpdateChecker.repoURL) }
 
     @objc private func openDonate() { NSWorkspace.shared.open(Self.donateURL) }
+
+    // MARK: Añadir y quitar sin ratón
+
+    /// Abre el panel para elegir apps, igual que soltarlas en la ventana. Es la vía accesible (⌘O).
+    func addApp() {
+        let picker = NSOpenPanel()
+        picker.canChooseFiles = true
+        picker.canChooseDirectories = false
+        picker.allowsMultipleSelection = true
+        picker.treatsFilePackagesAsDirectories = false
+        picker.allowedContentTypes = [.applicationBundle]
+        picker.prompt = L("Add")
+        picker.message = L("Choose the app whose volume you want to keep fixed")
+        if picker.runModal() == .OK { dropped(picker.urls) }
+    }
+
+    /// Quita la app de la fila que tiene el foco (tecla Supr o menú «Quitar app»).
+    func removeFocusedApp() {
+        guard let row = focusedRow() else { return }
+        removeApp(row.id)
+    }
+
+    private func focusedRow() -> AppRow? {
+        var responder: NSResponder? = window.firstResponder
+        while let r = responder {
+            if let row = r as? AppRow { return row }
+            responder = r.nextResponder
+        }
+        return nil
+    }
+
+    private func openAudioSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture") else { return }
+        NSWorkspace.shared.open(url)
+    }
 
     // MARK: Acciones
 

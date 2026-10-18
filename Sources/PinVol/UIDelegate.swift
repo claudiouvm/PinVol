@@ -33,7 +33,12 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ n: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        installMainMenu(quitAction: #selector(quitAll), quitTitle: L("Quit PinVol"))
+        let add = NSMenuItem(title: L("Add App…"), action: #selector(addApp), keyEquivalent: "o")
+        add.target = self
+        let remove = NSMenuItem(title: L("Remove App"), action: #selector(removeFocusedApp), keyEquivalent: "\u{8}")
+        remove.keyEquivalentModifierMask = []
+        remove.target = self
+        installMainMenu(quitAction: #selector(quitAll), quitTitle: L("Quit PinVol"), extra: [add, remove])
         // La ventana se abre con el primer estado recibido (o a los 1,5 s si la residente no responde).
         backend.onState = { [weak self] _, _ in self?.open() }
         backend.onShow = { [weak self] tab in
@@ -95,4 +100,13 @@ final class UIDelegate: NSObject, NSApplicationDelegate {
         backend.quit()
         NSApp.terminate(nil)
     }
+
+    /// ⌘O: elegir apps con el panel del sistema (también cuando la ventana aún no existe).
+    @objc private func addApp() {
+        if settings == nil { open() }
+        settings?.addApp()
+    }
+
+    /// ⌫: quitar la app de la fila que tiene el foco.
+    @objc private func removeFocusedApp() { settings?.removeFocusedApp() }
 }

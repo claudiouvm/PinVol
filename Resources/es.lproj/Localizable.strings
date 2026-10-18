@@ -12,13 +12,22 @@
 /* Pestaña Apps */
 "Drop an app here" = "Arrastra una app aquí";
 "Its volume will stay fixed · up to %ld apps" = "Su volumen quedará fijo · hasta %ld apps";
-"Drop another app here · %ld of %ld" = "Arrastra otra app aquí · %ld de %ld";
+"Add App…" = "Añadir app…";
+"Add another app… · %ld of %ld" = "Añadir otra app… · %ld de %ld";
+"Opens a panel to choose the app whose volume you want to keep fixed" = "Abre un panel para elegir la app cuyo volumen quieres mantener fijo";
+"Add" = "Añadir";
+"Choose the app whose volume you want to keep fixed" = "Elige la app cuyo volumen quieres mantener fijo";
 "Drop the .app whose volume you want to keep fixed (up to %ld apps)" = "Suelta aquí el archivo .app cuyo volumen quieres mantener fijo (hasta %ld apps)";
 "Fixed level for %@" = "Nivel fijo de %@";
 "The volume %@ will play at, on the same scale as the system volume" = "Volumen al que sonará %@, en la misma escala que el volumen del sistema";
 "Stop controlling %@" = "Dejar de controlar %@";
 "Remove %@" = "Quitar %@";
 "Remove app" = "Quitar app";
+"Remove App" = "Quitar app";
+"Open System Settings" = "Abrir Ajustes del Sistema";
+"Open audio settings for %@" = "Abrir los ajustes de audio de %@";
+"Retry %@" = "Reintentar %@";
+"Couldn't capture the audio" = "No se pudo capturar el audio";
 "Keep levels fixed" = "Mantener nivel fijo";
 "Offsets your Mac's system volume" = "Compensa el volumen general del Mac";
 "Maximum %ld apps: remove one to add another" = "Máximo %ld apps: quita una para añadir otra";
@@ -86,7 +95,6 @@
 "Active · %ld of %ld apps" = "Activo · %ld de %ld apps";
 "Active · %ld of %ld apps · at the limit" = "Activo · %ld de %ld apps · al límite";
 "At the gain limit · %@" = "Al límite de ganancia · %@";
-"Couldn't capture the audio (%d)" = "No se pudo capturar el audio (%d)";
 "Check that PinVol has permission in System Settings → Privacy & Security → System Audio Recording." = "Revisa que PinVol tenga permiso en Ajustes del Sistema → Privacidad y seguridad → Grabación de audio del sistema.";
 
 /* Menús (barra de menús, Dock y menú principal) */

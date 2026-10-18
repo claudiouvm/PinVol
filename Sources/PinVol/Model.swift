@@ -25,11 +25,13 @@ struct PinnedApp {
         self.id = id
         level = Float(d["level"] as? Double ?? 0.5)
         status = EngineStatus(kind: EngineStatus.Kind(rawValue: d["kind"] as? String ?? "") ?? .idle,
-                              text: d["text"] as? String ?? "", detail: d["detail"] as? String)
+                              text: d["text"] as? String ?? "", detail: d["detail"] as? String,
+                              recovery: EngineStatus.Recovery(rawValue: d["recovery"] as? String ?? "") ?? .none)
     }
 
     var dictionary: [String: Any] {
-        var d: [String: Any] = ["id": id, "level": Double(level), "kind": status.kind.rawValue, "text": status.text]
+        var d: [String: Any] = ["id": id, "level": Double(level), "kind": status.kind.rawValue,
+                                "text": status.text, "recovery": status.recovery.rawValue]
         if let detail = status.detail { d["detail"] = detail }
         return d
     }
@@ -146,6 +148,7 @@ protocol Backend: AnyObject {
     var onState: ((AppState, Bool) -> Void)? { get set }   // (estado, ¿completo?)
     func assign(_ id: String)
     func remove(_ id: String)
+    func retry(_ id: String)
     func setLevel(_ id: String, _ v: Float)
     func setEnabled(_ on: Bool)
     func setShowDock(_ on: Bool)
@@ -192,6 +195,7 @@ final class RemoteBackend: Backend {
         state.apps.removeAll { $0.id == id }
         IPC.post(IPC.toResident, ["op": "remove", "id": id])
     }
+    func retry(_ id: String) { IPC.post(IPC.toResident, ["op": "retry", "id": id]) }
     func setLevel(_ id: String, _ v: Float) {
         if let i = state.apps.firstIndex(where: { $0.id == id }) { state.apps[i].level = v }
         IPC.post(IPC.toResident, ["op": "level", "id": id, "value": Double(v)])

@@ -1,7 +1,10 @@
 import CoreAudio
 import Foundation
+import os
 
 // MARK: - Core Audio helpers
+
+private let audioLog = Logger(subsystem: "com.claudiouvm.pinvol", category: "audio")
 
 private let system = AudioObjectID(kAudioObjectSystemObject)
 
@@ -141,17 +144,24 @@ struct MasterVolume {
 
 struct EngineStatus {
     enum Kind: String { case idle, waiting, active, warning, error }
+
+    /// Qué puede hacer el usuario con este estado. La ventana muestra el botón correspondiente.
+    enum Recovery: String { case audioPermission, retry, none }
+
     let kind: Kind
     let text: String
-    var detail: String? = nil   // texto largo para el tooltip
+    var detail: String? = nil   // explicación larga: se muestra en la fila y en el tooltip
+    var recovery: Recovery = .none
 
     // Estados que usan el motor, el resumen de la ventana y las capturas de desarrollo.
     static var dragToStart: EngineStatus { EngineStatus(kind: .idle, text: L("Drag an app in to start")) }
     static var waiting: EngineStatus { EngineStatus(kind: .waiting, text: L("Waiting for the app's audio…")) }
     static func active(gain db: Float) -> EngineStatus { EngineStatus(kind: .active, text: L("Active · %@", gainText(db))) }
     static func captureFailed(_ code: OSStatus) -> EngineStatus {
-        EngineStatus(kind: .error, text: L("Couldn't capture the audio (%d)", code),
-                     detail: L("Check that PinVol has permission in System Settings → Privacy & Security → System Audio Recording."))
+        audioLog.error("no se pudo capturar el audio: \(code, privacy: .public)")
+        return EngineStatus(kind: .error, text: L("Couldn't capture the audio"),
+                            detail: L("Check that PinVol has permission in System Settings → Privacy & Security → System Audio Recording."),
+                            recovery: .audioPermission)
     }
 }
 

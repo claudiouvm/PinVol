@@ -114,6 +114,7 @@ final class Controller {
         case "bye": uiActive = false
         case "assign": if let id = m["id"] as? String { assign(id) }
         case "remove": if let id = m["id"] as? String { remove(id) }
+        case "retry": if let id = m["id"] as? String { retry(id) }
         case "level": if let id = m["id"] as? String, let v = m["value"] as? Double { setLevel(id, Float(v)) }
         case "enabled": if let v = m["value"] as? Bool { setEnabled(v) }
         case "dock": if let v = m["value"] as? Bool { setShowDock(v) }
@@ -167,6 +168,9 @@ final class Controller {
         onStatus?()
         broadcast(full: true)
     }
+
+    /// Vuelve a intentar capturar el audio (por ejemplo, después de conceder el permiso en Ajustes).
+    private func retry(_ id: String) { engines[id]?.reconcile() }
 
     private func setLevel(_ id: String, _ v: Float) {
         guard let i = apps.firstIndex(where: { $0.id == id }) else { return }
