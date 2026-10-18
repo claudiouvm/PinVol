@@ -92,6 +92,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     }
 
     func show() {
+        if window.isMiniaturized { window.deminiaturize(nil) }   // el menú de la barra y ⌥⌘P también la recuperan
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()   // delante de otras ventanas aunque macOS no conceda la activación
